@@ -1,0 +1,17 @@
+pre-commit:
+  jobs:
+    - name: configure-opencode
+      # Re-apply user overlays onto Forge-managed configs when either side changes.
+      glob:
+        - opencode.config.jsonc
+        - opencode.jsonc
+        - tui.config.jsonc
+        - tui.json
+        - scripts/configure.ts
+      # Configure rewrites the managed outputs; stage_fixed alone only re-adds
+      # {staged_files}, so overlay-only commits would leave opencode.jsonc /
+      # tui.json unstaged. Explicitly add those generated paths after configure.
+      run: |
+        npm run configure
+        git add --force -- opencode.jsonc tui.json
+      stage_fixed: true

@@ -1,0 +1,227 @@
+{
+  "$schema": "https://opencode.ai/theme.json",
+  "defs": {
+    "hfPrimary": "#3c489f",
+    "hfPrimaryLight": "#5a68c4",
+    "hfPrimaryDark": "#2a326f",
+    "hfSecondary": "#ffd042",
+    "hfSecondaryMuted": "#c9a535",
+    "hfTertiary": "#f15b29",
+    "hfBg": "#12141f",
+    "hfPanelBg": "#1a1d2e",
+    "hfElementBg": "#222638",
+    "hfBorder": "#2d3350",
+    "hfBorderActive": "#3c489f",
+    "hfFg": "#e8e9f2",
+    "hfMuted": "#8b90a8",
+    "hfComment": "#6b7088",
+    "hfSuccess": "#5cb85c",
+    "hfError": "#e05252",
+    "hfString": "#8fd48a",
+    "hfType": "#7b9cff",
+    "hfDiffAddedBg": "#1a2a1a",
+    "hfDiffRemovedBg": "#2a1a1a"
+  },
+  "theme": {
+    "primary": {
+      "dark": "hfPrimary",
+      "light": "hfPrimary"
+    },
+    "secondary": {
+      "dark": "hfSecondary",
+      "light": "hfSecondary"
+    },
+    "accent": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "error": {
+      "dark": "hfError",
+      "light": "hfError"
+    },
+    "warning": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "success": {
+      "dark": "hfSuccess",
+      "light": "hfSuccess"
+    },
+    "info": {
+      "dark": "hfPrimaryLight",
+      "light": "hfPrimary"
+    },
+    "text": {
+      "dark": "hfFg",
+      "light": "#12141f"
+    },
+    "textMuted": {
+      "dark": "hfMuted",
+      "light": "#5a6078"
+    },
+    "background": {
+      "dark": "hfBg",
+      "light": "#f5f6fa"
+    },
+    "backgroundPanel": {
+      "dark": "hfPanelBg",
+      "light": "#eceef5"
+    },
+    "backgroundElement": {
+      "dark": "hfElementBg",
+      "light": "#e0e3ef"
+    },
+    "border": {
+      "dark": "hfBorder",
+      "light": "#c8cce0"
+    },
+    "borderActive": {
+      "dark": "hfBorderActive",
+      "light": "hfPrimary"
+    },
+    "borderSubtle": {
+      "dark": "hfBorder",
+      "light": "#d8dbe8"
+    },
+    "diffAdded": {
+      "dark": "hfSuccess",
+      "light": "hfSuccess"
+    },
+    "diffRemoved": {
+      "dark": "hfError",
+      "light": "hfError"
+    },
+    "diffContext": {
+      "dark": "hfComment",
+      "light": "hfComment"
+    },
+    "diffHunkHeader": {
+      "dark": "hfMuted",
+      "light": "hfMuted"
+    },
+    "diffHighlightAdded": {
+      "dark": "hfSuccess",
+      "light": "hfSuccess"
+    },
+    "diffHighlightRemoved": {
+      "dark": "hfError",
+      "light": "hfError"
+    },
+    "diffAddedBg": {
+      "dark": "hfDiffAddedBg",
+      "light": "#e4f5e4"
+    },
+    "diffRemovedBg": {
+      "dark": "hfDiffRemovedBg",
+      "light": "#fbe4e4"
+    },
+    "diffContextBg": {
+      "dark": "hfElementBg",
+      "light": "#eceef5"
+    },
+    "diffLineNumber": {
+      "dark": "hfComment",
+      "light": "hfMuted"
+    },
+    "diffAddedLineNumberBg": {
+      "dark": "hfDiffAddedBg",
+      "light": "#e4f5e4"
+    },
+    "diffRemovedLineNumberBg": {
+      "dark": "hfDiffRemovedBg",
+      "light": "#fbe4e4"
+    },
+    "markdownText": {
+      "dark": "hfFg",
+      "light": "#12141f"
+    },
+    "markdownHeading": {
+      "dark": "hfPrimaryLight",
+      "light": "hfPrimary"
+    },
+    "markdownLink": {
+      "dark": "hfSecondary",
+      "light": "hfPrimary"
+    },
+    "markdownLinkText": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "markdownCode": {
+      "dark": "hfString",
+      "light": "hfSuccess"
+    },
+    "markdownBlockQuote": {
+      "dark": "hfComment",
+      "light": "hfComment"
+    },
+    "markdownEmph": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "markdownStrong": {
+      "dark": "hfSecondary",
+      "light": "hfSecondaryMuted"
+    },
+    "markdownHorizontalRule": {
+      "dark": "hfBorder",
+      "light": "#c8cce0"
+    },
+    "markdownListItem": {
+      "dark": "hfSecondary",
+      "light": "hfPrimary"
+    },
+    "markdownListEnumeration": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "markdownImage": {
+      "dark": "hfPrimaryLight",
+      "light": "hfPrimary"
+    },
+    "markdownImageText": {
+      "dark": "hfString",
+      "light": "hfSuccess"
+    },
+    "markdownCodeBlock": {
+      "dark": "hfFg",
+      "light": "#12141f"
+    },
+    "syntaxComment": {
+      "dark": "hfComment",
+      "light": "hfComment"
+    },
+    "syntaxKeyword": {
+      "dark": "hfSecondary",
+      "light": "hfSecondaryMuted"
+    },
+    "syntaxFunction": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "syntaxVariable": {
+      "dark": "hfPrimaryLight",
+      "light": "hfPrimary"
+    },
+    "syntaxString": {
+      "dark": "hfString",
+      "light": "hfSuccess"
+    },
+    "syntaxNumber": {
+      "dark": "hfSecondary",
+      "light": "hfSecondaryMuted"
+    },
+    "syntaxType": {
+      "dark": "hfType",
+      "light": "hfPrimary"
+    },
+    "syntaxOperator": {
+      "dark": "hfTertiary",
+      "light": "hfTertiary"
+    },
+    "syntaxPunctuation": {
+      "dark": "hfFg",
+      "light": "#12141f"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "theme": "forge",
+  "plugin_enabled": {
+    "humanforce.forge": true
+  },
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    [
+      "./plugins/forge-tui.tsx",
+      {}
+    ],
+    [
+      "./plugins/token-tracker.tsx",
+      {
+        "last_turn": {
+          "hidden": true,
+          "include_children": true
+        },
+        "session": {
+          "hidden": false,
+          "include_children": true
+        }
+      }
+    ]
+  ]
+}

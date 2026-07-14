@@ -1,0 +1,15 @@
+{
+  // User-managed TUI prefs. Applied by `npm run configure` onto Forge's tui.json.
+  // Forge forces theme + forge-tui plugin on setup; re-run configure after that.
+  "$schema": "https://opencode.ai/tui.json",
+
+  "plugin": [
+    [
+      "./plugins/token-tracker.tsx",
+      {
+        "last_turn": { "hidden": true, "include_children": true },
+        "session": { "hidden": false, "include_children": true }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@2.0.4/oh-my-opencode-slim.schema.json",
+  "multiplexer": {
+    "type": "none"
+  },
+  "autoUpdate": true,
+  "disabled_agents": [
+    "council",
+    "councillor"
+  ],
+  "preset": "forge",
+  "presets": {
+    "forge": {
+      "orchestrator": {
+        "model": "openrouter/x-ai/grok-4.5",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Lead",
+        "skills": [
+          "*"
+        ]
+      },
+      "oracle": {
+        "model": "openrouter/x-ai/grok-4.5",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Auditor"
+      },
+      "fixer": {
+        "model": "openrouter/x-ai/grok-4.5",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Builder"
+      },
+      "designer": {
+        "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Designer"
+      },
+      "explorer": {
+        "model": "openrouter/z-ai/glm-5.2",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Explorer"
+      },
+      "librarian": {
+        "model": "openrouter/z-ai/glm-5.2",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Librarian"
+      },
+      "observer": {
+        "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "mcps": [
+          "*"
+        ],
+        "displayName": "Visionary"
+      }
+    }
+  }
+}
