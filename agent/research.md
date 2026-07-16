@@ -1,7 +1,7 @@
 ---
 description: Looks up external information, compares sources, and summarizes findings.
 mode: subagent
-model: openrouter/deepseek/deepseek-v4-pro
+model: openrouter/deepseek/deepseek-v4-flash
 temperature: 0.1
 permission:
   edit: deny

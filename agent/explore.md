@@ -1,7 +1,7 @@
 ---
 description: Scoped discovery and small technical probes (repo, APIs, CLIs). Use for facts not already in context.
 mode: subagent
-model: openrouter/deepseek/deepseek-v4-pro
+model: openrouter/deepseek/deepseek-v4-flash
 temperature: 0.1
 permission:
   edit: deny
