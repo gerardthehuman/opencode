@@ -4,14 +4,22 @@
  * Displays live token usage, request count, and cost in the sidebar.
  * Updates every 2 seconds during agent execution.
  *
+ * Each section is collapsed by default. Click the title (▸/▾) to expand
+ * a provider breakdown: input, output, reasoning, cache read/write.
+ * Role/type attribution (tool vs user vs system vs skill) is not available
+ * from the OpenCode token API — only aggregate provider counts.
+ *
  * Shows (sections can be hidden / roll in subagents via plugin options):
- *   Last Turn          ← yellow title while session is busy
+ *   ▸ Last Turn          ← yellow title while session is busy
  *   34.0k tokens
  *   1 requests
  *   $0.070 spent
  *
- *   Session
+ *   ▾ Session
  *   366.3k tokens
+ *     300.0k input
+ *      60.0k output
+ *       6.3k reasoning
  *   100 requests
  *   $4.50 spent
  *
@@ -39,7 +47,7 @@ import type {
   TuiPluginModule,
 } from "@opencode-ai/plugin/tui"
 import type { AssistantMessage, Message, Session } from "@opencode-ai/sdk/v2"
-import { createEffect, createMemo, createSignal, onCleanup } from "solid-js"
+import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js"
 
 type SectionConfig = {
   hidden: boolean
@@ -55,9 +63,23 @@ type TokenStats = {
   tokens: number
   reqs: number
   cost: number
+  input: number
+  output: number
+  reasoning: number
+  cacheRead: number
+  cacheWrite: number
 }
 
-const EMPTY: TokenStats = { tokens: 0, reqs: 0, cost: 0 }
+const EMPTY: TokenStats = {
+  tokens: 0,
+  reqs: 0,
+  cost: 0,
+  input: 0,
+  output: 0,
+  reasoning: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+}
 
 const DEFAULT_SECTION: SectionConfig = {
   hidden: false,
@@ -88,28 +110,61 @@ function isAssistantWithTokens(m: Message): m is AssistantMessage {
   return m.role === "assistant" && !!m.tokens
 }
 
+/** Headline total: prefer provider total, else input + output + reasoning (cache not double-counted). */
+function headlineTokens(
+  input: number,
+  output: number,
+  reasoning: number,
+  total?: number,
+): number {
+  if (typeof total === "number" && total > 0) return total
+  return input + output + reasoning
+}
+
 function sumMessages(msgs: ReadonlyArray<Message>): TokenStats {
   const assistantMsgs = msgs.filter(isAssistantWithTokens)
   let tokens = 0
   let cost = 0
   let reqs = 0
+  let input = 0
+  let output = 0
+  let reasoning = 0
+  let cacheRead = 0
+  let cacheWrite = 0
   for (const m of assistantMsgs) {
     const inp = m.tokens.input || 0
     const out = m.tokens.output || 0
-    tokens += inp + out
+    const reason = m.tokens.reasoning || 0
+    const cRead = m.tokens.cache?.read || 0
+    const cWrite = m.tokens.cache?.write || 0
+    input += inp
+    output += out
+    reasoning += reason
+    cacheRead += cRead
+    cacheWrite += cWrite
+    tokens += headlineTokens(inp, out, reason, m.tokens.total)
     cost += m.cost || 0
     if (inp > 0) reqs += 1
   }
-  return { tokens, reqs, cost }
+  return { tokens, reqs, cost, input, output, reasoning, cacheRead, cacheWrite }
 }
 
 function sumSessionRollup(session: Session | undefined): TokenStats | null {
   if (!session?.tokens) return null
-  const tokens = (session.tokens.input || 0) + (session.tokens.output || 0)
+  const input = session.tokens.input || 0
+  const output = session.tokens.output || 0
+  const reasoning = session.tokens.reasoning || 0
+  const cacheRead = session.tokens.cache?.read || 0
+  const cacheWrite = session.tokens.cache?.write || 0
   return {
-    tokens,
+    tokens: headlineTokens(input, output, reasoning),
     reqs: 0,
     cost: session.cost || 0,
+    input,
+    output,
+    reasoning,
+    cacheRead,
+    cacheWrite,
   }
 }
 
@@ -136,6 +191,11 @@ function addStats(into: TokenStats, add: TokenStats) {
   into.tokens += add.tokens
   into.reqs += add.reqs
   into.cost += add.cost
+  into.input += add.input
+  into.output += add.output
+  into.reasoning += add.reasoning
+  into.cacheRead += add.cacheRead
+  into.cacheWrite += add.cacheWrite
 }
 
 function mergeStats(a: TokenStats, b: TokenStats): TokenStats {
@@ -143,6 +203,11 @@ function mergeStats(a: TokenStats, b: TokenStats): TokenStats {
     tokens: a.tokens + b.tokens,
     reqs: a.reqs + b.reqs,
     cost: a.cost + b.cost,
+    input: a.input + b.input,
+    output: a.output + b.output,
+    reasoning: a.reasoning + b.reasoning,
+    cacheRead: a.cacheRead + b.cacheRead,
+    cacheWrite: a.cacheWrite + b.cacheWrite,
   }
 }
 
@@ -213,6 +278,80 @@ async function loadChildStats(
   }
 
   return totals
+}
+
+function fmt(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return `${Math.round(n)}`
+}
+
+function fmtCost(n: number) {
+  if (n >= 1) return `$${n.toFixed(2)}`
+  if (n >= 0.01) return `$${n.toFixed(3)}`
+  return `$${n.toFixed(4)}`
+}
+
+function BreakdownLine(props: {
+  value: number
+  label: string
+  muted: unknown
+}) {
+  return (
+    <Show when={props.value > 0}>
+      <text>
+        <span style={{ fg: props.muted }}>  {fmt(props.value)}</span>
+        <span style={{ fg: props.muted }}> {props.label}</span>
+      </text>
+    </Show>
+  )
+}
+
+/** Module-level so expand state is not reset when TokenFooter re-renders. */
+function TokenSection(props: {
+  title: string
+  stats: TokenStats
+  theme: () => { text: unknown; textMuted: unknown }
+  /** When set, title uses this color (e.g. yellow while working). */
+  titleColor?: unknown
+}) {
+  const [expanded, setExpanded] = createSignal(false)
+  const muted = () => props.theme().textMuted
+  const titleFg = () => props.titleColor ?? props.theme().text
+
+  return (
+    <box>
+      <text>
+        <b style={{ fg: props.titleColor }}>{props.title}</b>
+      </text>
+      <box onMouseDown={() => setExpanded(v => !v)}>
+        <text>
+          <span style={{ fg: muted() }}>{fmt(props.stats.tokens)}</span>
+          <span style={{ fg: muted() }}> tokens</span>
+          <Show when={props.stats.tokens > 0}>
+            <span style={{ fg: props.theme().text }}>{expanded() ? " ▾" : " ▸"}</span>
+          </Show>
+        </text>
+      </box>
+      <Show when={props.stats.tokens > 0 && expanded()}>
+        <box>
+          <BreakdownLine value={props.stats.input} label="input" muted={muted()} />
+          <BreakdownLine value={props.stats.output} label="output" muted={muted()} />
+          <BreakdownLine value={props.stats.reasoning} label="reasoning" muted={muted()} />
+          <BreakdownLine value={props.stats.cacheRead} label="cache read" muted={muted()} />
+          <BreakdownLine value={props.stats.cacheWrite} label="cache write" muted={muted()} />
+        </box>
+      </Show>
+      <text>
+        <span style={{ fg: muted() }}>{props.stats.reqs}</span>
+        <span style={{ fg: muted() }}> requests</span>
+      </text>
+      <text>
+        <span style={{ fg: muted() }}>{fmtCost(props.stats.cost)}</span>
+        <span style={{ fg: muted() }}> spent</span>
+      </text>
+    </box>
+  )
 }
 
 function TokenFooter(props: {
@@ -300,45 +439,6 @@ function TokenFooter(props: {
     return mergeStats(base, allChildren())
   })
 
-  const fmt = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
-    return `${Math.round(n)}`
-  }
-
-  const fmtCost = (n: number) => {
-    if (n >= 1) return `$${n.toFixed(2)}`
-    if (n >= 0.01) return `$${n.toFixed(3)}`
-    return `$${n.toFixed(4)}`
-  }
-
-  const Section = (sectionProps: {
-    title: string
-    stats: TokenStats
-    /** When set, title uses this color (e.g. yellow while working). */
-    titleColor?: unknown
-  }) => (
-    <box>
-      <text>
-        <b style={{ fg: sectionProps.titleColor ?? theme().text }}>
-          {sectionProps.title}
-        </b>
-      </text>
-      <text>
-        <span style={{ fg: theme().textMuted }}>{fmt(sectionProps.stats.tokens)}</span>
-        <span style={{ fg: theme().textMuted }}> tokens</span>
-      </text>
-      <text>
-        <span style={{ fg: theme().textMuted }}>{sectionProps.stats.reqs}</span>
-        <span style={{ fg: theme().textMuted }}> requests</span>
-      </text>
-      <text>
-        <span style={{ fg: theme().textMuted }}>{fmtCost(sectionProps.stats.cost)}</span>
-        <span style={{ fg: theme().textMuted }}> spent</span>
-      </text>
-    </box>
-  )
-
   const showLast = () => !cfg().last_turn.hidden
   const showSession = () => !cfg().session.hidden
 
@@ -349,13 +449,16 @@ function TokenFooter(props: {
   return (
     <box gap={1}>
       {showLast() ? (
-        <Section
+        <TokenSection
           title="Last Turn"
           stats={lastTurnData()}
+          theme={theme}
           titleColor={lastTitleColor()}
         />
       ) : null}
-      {showSession() ? <Section title="Session" stats={sessionData()} /> : null}
+      {showSession() ? (
+        <TokenSection title="Session" stats={sessionData()} theme={theme} />
+      ) : null}
     </box>
   )
 }
