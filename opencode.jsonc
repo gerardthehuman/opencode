@@ -82,6 +82,13 @@
             "context": 1000000,
             "output": 16384
           }
+        },
+        "deepseek/deepseek-v4-flash": {
+          "name": "Deepseek V4 Flash (Forge)",
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          }
         }
       },
       "whitelist": [
@@ -91,7 +98,8 @@
         "anthropic/claude-opus-4.8",
         "moonshotai/kimi-k2.7-code",
         "x-ai/grok-4.5",
-        "anthropic/claude-sonnet-4.6"
+        "anthropic/claude-sonnet-4.6",
+        "deepseek/deepseek-v4-flash"
       ]
     }
   },
@@ -108,17 +116,18 @@
     }
   },
   "plugin": [
-    "oh-my-opencode-slim",
     [
       "@plannotator/opencode",
       {
         "workflow": "plan-agent",
         "planningAgents": [
           "plan",
-          "lead"
+          "lead",
+          "orchestrator"
         ]
       }
-    ]
+    ],
+    "oh-my-opencode-slim"
   ],
   "mcp": {
     "forge": {

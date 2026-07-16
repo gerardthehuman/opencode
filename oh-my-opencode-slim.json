@@ -12,11 +12,11 @@
   "presets": {
     "forge": {
       "orchestrator": {
-        "model": "openrouter/x-ai/grok-4.5",
+        "model": "openrouter/z-ai/glm-5.2",
         "mcps": [
           "*"
         ],
-        "displayName": "Lead",
+        "displayName": "orchestrator",
         "skills": [
           "*"
         ]
@@ -26,42 +26,42 @@
         "mcps": [
           "*"
         ],
-        "displayName": "Auditor"
+        "displayName": "oracle"
       },
       "fixer": {
-        "model": "openrouter/x-ai/grok-4.5",
+        "model": "openrouter/deepseek/deepseek-v4-flash",
         "mcps": [
           "*"
         ],
-        "displayName": "Builder"
+        "displayName": "fixer"
       },
       "designer": {
-        "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "model": "openrouter/moonshotai/kimi-k2.7-code",
         "mcps": [
           "*"
         ],
-        "displayName": "Designer"
+        "displayName": "designer"
       },
       "explorer": {
-        "model": "openrouter/z-ai/glm-5.2",
+        "model": "openrouter/deepseek/deepseek-v4-flash",
         "mcps": [
           "*"
         ],
-        "displayName": "Explorer"
+        "displayName": "explorer"
       },
       "librarian": {
-        "model": "openrouter/z-ai/glm-5.2",
+        "model": "openrouter/deepseek/deepseek-v4-flash",
         "mcps": [
           "*"
         ],
-        "displayName": "Librarian"
+        "displayName": "librarian"
       },
       "observer": {
-        "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "model": "openrouter/moonshotai/kimi-k2.7-code",
         "mcps": [
           "*"
         ],
-        "displayName": "Visionary"
+        "displayName": "observer"
       }
     }
   }

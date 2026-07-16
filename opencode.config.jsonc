@@ -10,7 +10,7 @@
       "@plannotator/opencode",
       {
         "workflow": "plan-agent",
-        "planningAgents": ["plan", "lead"]
+        "planningAgents": ["plan", "lead", "orchestrator"]
       }
     ]
   ],
