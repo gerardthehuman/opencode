@@ -1,8 +1,8 @@
 {
-  "theme": "forge",
   "plugin_enabled": {
     "humanforce.forge": true
   },
+  "theme": "forge",
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
     [

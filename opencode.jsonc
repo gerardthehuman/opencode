@@ -1,94 +1,117 @@
 {
+  "agent": {
+    "code": {
+      "model": "openrouter/x-ai/grok-4.5"
+    },
+    "explore": {
+      "model": "openrouter/deepseek/deepseek-v4-flash"
+    },
+    "lead": {
+      "model": "openrouter/x-ai/grok-4.5"
+    },
+    "lens": {
+      "model": "openrouter/x-ai/grok-build-0.1"
+    },
+    "plan": {
+      "model": "openrouter/anthropic/claude-opus-4.8"
+    },
+    "research": {
+      "model": "openrouter/deepseek/deepseek-v4-flash"
+    },
+    "review": {
+      "model": "openrouter/x-ai/grok-4.5"
+    }
+  },
   "enabled_providers": [
     "openrouter"
   ],
   "provider": {
     "openrouter": {
-      "name": "Forge (OpenRouter)",
-      "options": {
-        "baseURL": "{env:FORGE_OPENROUTER_BROKER_BASE_URL}",
-        "apiKey": "{env:FORGE_SUPABASE_ACCESS_TOKEN}",
-        "headers": {
-          "HTTP-Referer": "https://forge.humanforce.com",
-          "X-Title": "Forge OpenCode"
-        }
-      },
       "models": {
+        "anthropic/claude-opus-4.8": {
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          },
+          "name": "Claude Opus 4.8 (Forge)"
+        },
+        "anthropic/claude-sonnet-4.6": {
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          },
+          "name": "Claude Sonnet 4.6 (Forge)"
+        },
+        "deepseek/deepseek-v4-flash": {
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          },
+          "name": "Deepseek V4 Flash (Forge)"
+        },
         "deepseek/deepseek-v4-pro": {
-          "name": "Default (Forge)",
+          "cost": {
+            "cache_read": 0.3,
+            "input": 3,
+            "output": 15
+          },
           "limit": {
             "context": 200000,
             "output": 16384
           },
-          "cost": {
-            "input": 3,
-            "output": 15,
-            "cache_read": 0.3
-          }
-        },
-        "z-ai/glm-5.2": {
-          "name": "GLM 5.2 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 1.2,
-            "output": 4.2,
-            "cache_read": 0
-          }
-        },
-        "x-ai/grok-build-0.1": {
-          "name": "Grok Build (Forge)",
-          "limit": {
-            "context": 256000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 1,
-            "output": 2,
-            "cache_read": 0
-          }
-        },
-        "anthropic/claude-opus-4.8": {
-          "name": "Claude Opus 4.8 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
+          "name": "Deepseek v4 Pro (Forge)"
         },
         "moonshotai/kimi-k2.7-code": {
-          "name": "Kimi K2.7 Code (Forge)",
           "limit": {
             "context": 262000,
             "output": 16384
-          }
+          },
+          "name": "Kimi K2.7 Code (Forge)"
         },
         "x-ai/grok-4.5": {
-          "name": "Grok 4.5 (Forge)",
+          "cost": {
+            "cache_read": 0.5,
+            "input": 2,
+            "output": 6
+          },
           "limit": {
             "context": 500000,
             "output": 16384
           },
+          "name": "Grok 4.5 (Forge)"
+        },
+        "x-ai/grok-build-0.1": {
           "cost": {
-            "input": 2,
-            "output": 6,
-            "cache_read": 0.5
-          }
+            "cache_read": 0,
+            "input": 1,
+            "output": 2
+          },
+          "limit": {
+            "context": 256000,
+            "output": 16384
+          },
+          "name": "Grok Build (Forge)"
         },
-        "anthropic/claude-sonnet-4.6": {
-          "name": "Claude Sonnet 4.6 (Forge)",
+        "z-ai/glm-5.2": {
+          "cost": {
+            "cache_read": 0,
+            "input": 1.2,
+            "output": 4.2
+          },
           "limit": {
             "context": 1000000,
             "output": 16384
-          }
-        },
-        "deepseek/deepseek-v4-flash": {
-          "name": "Deepseek V4 Flash (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
+          },
+          "name": "GLM 5.2 (Forge)"
+        }
+      },
+      "name": "Forge (OpenRouter)",
+      "options": {
+        "apiKey": "{env:FORGE_SUPABASE_ACCESS_TOKEN}",
+        "baseURL": "{env:FORGE_OPENROUTER_BROKER_BASE_URL}",
+        "headers": {
+          "HTTP-Referer": "https://forge.humanforce.com",
+          "X-Title": "Forge OpenCode"
         }
       },
       "whitelist": [
@@ -117,6 +140,17 @@
   },
   "plugin": [
     [
+      "@plannotator/opencode@0.23.1",
+      {
+        "planningAgents": [
+          "plan",
+          "lead"
+        ],
+        "workflow": "plan-agent"
+      }
+    ],
+    "oh-my-opencode-slim",
+    [
       "@plannotator/opencode",
       {
         "workflow": "plan-agent",
@@ -126,10 +160,15 @@
           "orchestrator"
         ]
       }
-    ],
-    "oh-my-opencode-slim"
+    ]
   ],
   "mcp": {
+    "context7": {
+      "enabled": true,
+      "oauth": false,
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
     "forge": {
       "type": "remote",
       "url": "{env:FORGE_MCP_URL}",
@@ -137,6 +176,18 @@
       "headers": {
         "Authorization": "Bearer {env:FORGE_MCP_TOKEN}"
       }
+    },
+    "gh_grep": {
+      "enabled": true,
+      "oauth": false,
+      "type": "remote",
+      "url": "https://mcp.grep.app"
+    },
+    "websearch": {
+      "enabled": true,
+      "oauth": false,
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa"
     }
   }
 }
