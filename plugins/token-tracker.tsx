@@ -4,6 +4,10 @@
  * Displays live token usage, request count, and cost in the sidebar.
  * Updates every 2 seconds during agent execution.
  *
+ * Session also shows current context-window fill (token count + % of model
+ * limit), matching OpenCode's built-in Context math. Forge disables
+ * `internal:sidebar-context` so this is the sole context/spend strip.
+ *
  * Each section is collapsed by default. Click the title (▸/▾) to expand
  * a provider breakdown: input, output, reasoning, cache read/write.
  * Role/type attribution (tool vs user vs system vs skill) is not available
@@ -15,8 +19,9 @@
  *   1 requests
  *   $0.070 spent
  *
- *   ▾ Session
- *   366.3k tokens
+ *   Session
+ *   48.2k context · 24% used   ← last assistant fill (parent only)
+ *   ▾ 366.3k tokens            ← cumulative session
  *     300.0k input
  *      60.0k output
  *       6.3k reasoning
@@ -31,8 +36,8 @@
  *
  * Defaults: both sections visible, children excluded.
  *
- * Placement: sidebar_content with order 150 (right after built-in Context at 100).
- * Built-in orders (for reference): Context 100, LSP 300, MCP/Todo/Files nearby.
+ * Placement: sidebar_content with order 150 (was below built-in Context at 100;
+ * Context is disabled by Forge setup).
  *
  * Requirements:
  *   - OpenCode v1.4.3+
@@ -47,7 +52,7 @@ import type {
   TuiPluginModule,
 } from "@opencode-ai/plugin/tui"
 import type { AssistantMessage, Message, Session } from "@opencode-ai/sdk/v2"
-import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, onCleanup, untrack, Show } from "solid-js"
 
 type SectionConfig = {
   hidden: boolean
@@ -68,6 +73,18 @@ type TokenStats = {
   reasoning: number
   cacheRead: number
   cacheWrite: number
+}
+
+/** Current context-window occupancy (last completed assistant turn). */
+type ContextFill = {
+  tokens: number
+  /** null when the model has no `limit.context`. */
+  percent: number | null
+}
+
+type ProviderLike = {
+  id: string
+  models?: Record<string, { limit?: { context?: number } } | undefined>
 }
 
 const EMPTY: TokenStats = {
@@ -108,6 +125,45 @@ function parseConfig(options: PluginOptions | undefined): TrackerConfig {
 
 function isAssistantWithTokens(m: Message): m is AssistantMessage {
   return m.role === "assistant" && !!m.tokens
+}
+
+/**
+ * Context-window size for one assistant message — same buckets as OpenCode's
+ * built-in Context panel (includes cache so % fill matches the window).
+ */
+function contextWindowTokens(m: AssistantMessage): number {
+  return (
+    (m.tokens.input || 0) +
+    (m.tokens.output || 0) +
+    (m.tokens.reasoning || 0) +
+    (m.tokens.cache?.read || 0) +
+    (m.tokens.cache?.write || 0)
+  )
+}
+
+/**
+ * Parent-session context fill only (subagents have their own windows).
+ * Mirrors OpenCode: last assistant with `tokens.output > 0`.
+ */
+function contextFill(
+  msgs: ReadonlyArray<Message>,
+  providers: ReadonlyArray<ProviderLike>,
+): ContextFill | null {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]
+    if (!isAssistantWithTokens(m)) continue
+    if ((m.tokens.output || 0) <= 0) continue
+    const tokens = contextWindowTokens(m)
+    if (tokens <= 0) continue
+    const model = providers.find(p => p.id === m.providerID)?.models?.[m.modelID]
+    const limit = model?.limit?.context
+    const percent =
+      typeof limit === "number" && limit > 0
+        ? Math.round((tokens / limit) * 100)
+        : null
+    return { tokens, percent }
+  }
+  return null
 }
 
 /** Headline total: prefer provider total, else input + output + reasoning (cache not double-counted). */
@@ -218,6 +274,9 @@ async function statsForSession(api: TuiPluginApi, session: Session): Promise<Tok
 
   // Fall back to HTTP messages for accurate request counts.
   try {
+    // SDK v2 takes flat params keyed exactly `sessionID` — buildClientParams
+    // silently drops unknown keys (e.g. a nested `path` object), leaving the
+    // {sessionID} URL placeholder unsubstituted and the request failing.
     const msgRes = await api.client.session.messages({ sessionID: session.id })
     const infos = (msgRes.data ?? []).map(row => row.info)
     if (infos.length > 0) return sumMessages(infos)
@@ -314,16 +373,26 @@ function TokenSection(props: {
   theme: () => { text: unknown; textMuted: unknown }
   /** When set, title uses this color (e.g. yellow while working). */
   titleColor?: unknown
+  /** Session only: current context-window fill (replaces built-in Context). */
+  context?: ContextFill | null
 }) {
   const [expanded, setExpanded] = createSignal(false)
   const muted = () => props.theme().textMuted
-  const titleFg = () => props.titleColor ?? props.theme().text
 
   return (
     <box>
       <text>
         <b style={{ fg: props.titleColor }}>{props.title}</b>
       </text>
+      <Show when={props.context && props.context.tokens > 0}>
+        <text>
+          <span style={{ fg: muted() }}>{fmt(props.context!.tokens)}</span>
+          <span style={{ fg: muted() }}> context</span>
+          <Show when={props.context!.percent !== null}>
+            <span style={{ fg: muted() }}> · {props.context!.percent}% used</span>
+          </Show>
+        </text>
+      </Show>
       <box onMouseDown={() => setExpanded(v => !v)}>
         <text>
           <span style={{ fg: muted() }}>{fmt(props.stats.tokens)}</span>
@@ -423,6 +492,7 @@ function TokenFooter(props: {
     return {
       last: lastTurnStats(msgs),
       parent: sumMessages(msgs),
+      context: contextFill(msgs, state.provider),
       isBusy,
     }
   })
@@ -457,13 +527,18 @@ function TokenFooter(props: {
         />
       ) : null}
       {showSession() ? (
-        <TokenSection title="Session" stats={sessionData()} theme={theme} />
+        <TokenSection
+          title="Session"
+          stats={sessionData()}
+          theme={theme}
+          context={parentData().context}
+        />
       ) : null}
     </box>
   )
 }
 
-// Built-in Context is order 100; sit just below it (quota uses the same band).
+// Primary usage strip (built-in Context is disabled by Forge setup).
 const SIDEBAR_ORDER = 150
 
 const tui: TuiPlugin = async (api, options) => {
@@ -473,13 +548,17 @@ const tui: TuiPlugin = async (api, options) => {
     order: SIDEBAR_ORDER,
     slots: {
       sidebar_content(_ctx, props: { session_id: string }) {
-        return (
+        // Untrack component creation (see progress-relay.tsx): without it the
+        // host's tracked scope remounts the footer on every internal signal
+        // update, resetting expand state and discarding fetched child stats.
+        const sessionId = props.session_id
+        return untrack(() => (
           <TokenFooter
             api={api}
-            session_id={props.session_id}
+            session_id={sessionId}
             config={config}
           />
-        )
+        ))
       },
     },
   })

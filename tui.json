@@ -1,6 +1,7 @@
 {
   "plugin_enabled": {
-    "humanforce.forge": true
+    "humanforce.forge": true,
+    "internal:sidebar-context": false
   },
   "theme": "forge",
   "$schema": "https://opencode.ai/tui.json",
@@ -8,6 +9,15 @@
     [
       "./plugins/forge-tui.tsx",
       {}
+    ],
+    [
+      "./plugins/progress-relay.tsx",
+      {
+        "hidden": false,
+        "max_agents": 4,
+        "show_findings": false,
+        "scope": "turn"
+      }
     ],
     [
       "./plugins/token-tracker.tsx",
