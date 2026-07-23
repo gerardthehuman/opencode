@@ -1,0 +1,5 @@
+pre-commit:
+  jobs:
+    - name: format
+      run: npx oxfmt --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
