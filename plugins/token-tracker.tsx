@@ -45,47 +45,43 @@
  */
 
 /** @jsxImportSource @opentui/solid */
-import type { PluginOptions } from "@opencode-ai/plugin"
-import type {
-  TuiPlugin,
-  TuiPluginApi,
-  TuiPluginModule,
-} from "@opencode-ai/plugin/tui"
-import type { AssistantMessage, Message, Session } from "@opencode-ai/sdk/v2"
-import { createEffect, createMemo, createSignal, onCleanup, untrack, Show } from "solid-js"
+import type { PluginOptions } from "@opencode-ai/plugin";
+import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui";
+import type { AssistantMessage, Message, Session } from "@opencode-ai/sdk/v2";
+import { createEffect, createMemo, createSignal, onCleanup, untrack, Show } from "solid-js";
 
 type SectionConfig = {
-  hidden: boolean
-  include_children: boolean
-}
+  hidden: boolean;
+  include_children: boolean;
+};
 
 type TrackerConfig = {
-  last_turn: SectionConfig
-  session: SectionConfig
-}
+  last_turn: SectionConfig;
+  session: SectionConfig;
+};
 
 type TokenStats = {
-  tokens: number
-  reqs: number
-  cost: number
-  input: number
-  output: number
-  reasoning: number
-  cacheRead: number
-  cacheWrite: number
-}
+  tokens: number;
+  reqs: number;
+  cost: number;
+  input: number;
+  output: number;
+  reasoning: number;
+  cacheRead: number;
+  cacheWrite: number;
+};
 
 /** Current context-window occupancy (last completed assistant turn). */
 type ContextFill = {
-  tokens: number
+  tokens: number;
   /** null when the model has no `limit.context`. */
-  percent: number | null
-}
+  percent: number | null;
+};
 
 type ProviderLike = {
-  id: string
-  models?: Record<string, { limit?: { context?: number } } | undefined>
-}
+  id: string;
+  models?: Record<string, { limit?: { context?: number } } | undefined>;
+};
 
 const EMPTY: TokenStats = {
   tokens: 0,
@@ -96,35 +92,35 @@ const EMPTY: TokenStats = {
   reasoning: 0,
   cacheRead: 0,
   cacheWrite: 0,
-}
+};
 
 const DEFAULT_SECTION: SectionConfig = {
   hidden: false,
   include_children: false,
-}
+};
 
 function asBool(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback
+  return typeof value === "boolean" ? value : fallback;
 }
 
 function parseSection(raw: unknown): SectionConfig {
-  if (!raw || typeof raw !== "object") return { ...DEFAULT_SECTION }
-  const obj = raw as Record<string, unknown>
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_SECTION };
+  const obj = raw as Record<string, unknown>;
   return {
     hidden: asBool(obj.hidden, DEFAULT_SECTION.hidden),
     include_children: asBool(obj.include_children, DEFAULT_SECTION.include_children),
-  }
+  };
 }
 
 function parseConfig(options: PluginOptions | undefined): TrackerConfig {
   return {
     last_turn: parseSection(options?.last_turn),
     session: parseSection(options?.session),
-  }
+  };
 }
 
 function isAssistantWithTokens(m: Message): m is AssistantMessage {
-  return m.role === "assistant" && !!m.tokens
+  return m.role === "assistant" && !!m.tokens;
 }
 
 /**
@@ -138,7 +134,7 @@ function contextWindowTokens(m: AssistantMessage): number {
     (m.tokens.reasoning || 0) +
     (m.tokens.cache?.read || 0) +
     (m.tokens.cache?.write || 0)
-  )
+  );
 }
 
 /**
@@ -150,68 +146,61 @@ function contextFill(
   providers: ReadonlyArray<ProviderLike>,
 ): ContextFill | null {
   for (let i = msgs.length - 1; i >= 0; i--) {
-    const m = msgs[i]
-    if (!isAssistantWithTokens(m)) continue
-    if ((m.tokens.output || 0) <= 0) continue
-    const tokens = contextWindowTokens(m)
-    if (tokens <= 0) continue
-    const model = providers.find(p => p.id === m.providerID)?.models?.[m.modelID]
-    const limit = model?.limit?.context
+    const m = msgs[i];
+    if (!isAssistantWithTokens(m)) continue;
+    if ((m.tokens.output || 0) <= 0) continue;
+    const tokens = contextWindowTokens(m);
+    if (tokens <= 0) continue;
+    const model = providers.find((p) => p.id === m.providerID)?.models?.[m.modelID];
+    const limit = model?.limit?.context;
     const percent =
-      typeof limit === "number" && limit > 0
-        ? Math.round((tokens / limit) * 100)
-        : null
-    return { tokens, percent }
+      typeof limit === "number" && limit > 0 ? Math.round((tokens / limit) * 100) : null;
+    return { tokens, percent };
   }
-  return null
+  return null;
 }
 
 /** Headline total: prefer provider total, else input + output + reasoning (cache not double-counted). */
-function headlineTokens(
-  input: number,
-  output: number,
-  reasoning: number,
-  total?: number,
-): number {
-  if (typeof total === "number" && total > 0) return total
-  return input + output + reasoning
+function headlineTokens(input: number, output: number, reasoning: number, total?: number): number {
+  if (typeof total === "number" && total > 0) return total;
+  return input + output + reasoning;
 }
 
 function sumMessages(msgs: ReadonlyArray<Message>): TokenStats {
-  const assistantMsgs = msgs.filter(isAssistantWithTokens)
-  let tokens = 0
-  let cost = 0
-  let reqs = 0
-  let input = 0
-  let output = 0
-  let reasoning = 0
-  let cacheRead = 0
-  let cacheWrite = 0
+  const assistantMsgs = msgs.filter(isAssistantWithTokens);
+  let tokens = 0;
+  let cost = 0;
+  let reqs = 0;
+  let input = 0;
+  let output = 0;
+  let reasoning = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
   for (const m of assistantMsgs) {
-    const inp = m.tokens.input || 0
-    const out = m.tokens.output || 0
-    const reason = m.tokens.reasoning || 0
-    const cRead = m.tokens.cache?.read || 0
-    const cWrite = m.tokens.cache?.write || 0
-    input += inp
-    output += out
-    reasoning += reason
-    cacheRead += cRead
-    cacheWrite += cWrite
-    tokens += headlineTokens(inp, out, reason, m.tokens.total)
-    cost += m.cost || 0
-    if (inp > 0) reqs += 1
+    const inp = m.tokens.input || 0;
+    const out = m.tokens.output || 0;
+    const reason = m.tokens.reasoning || 0;
+    const cRead = m.tokens.cache?.read || 0;
+    const cWrite = m.tokens.cache?.write || 0;
+    input += inp;
+    output += out;
+    reasoning += reason;
+    cacheRead += cRead;
+    cacheWrite += cWrite;
+    tokens += headlineTokens(inp, out, reason, m.tokens.total);
+    cost += m.cost || 0;
+    if (inp > 0) reqs += 1;
   }
-  return { tokens, reqs, cost, input, output, reasoning, cacheRead, cacheWrite }
+  return { tokens, reqs, cost, input, output, reasoning, cacheRead, cacheWrite };
 }
 
 function sumSessionRollup(session: Session | undefined): TokenStats | null {
-  if (!session?.tokens) return null
-  const input = session.tokens.input || 0
-  const output = session.tokens.output || 0
-  const reasoning = session.tokens.reasoning || 0
-  const cacheRead = session.tokens.cache?.read || 0
-  const cacheWrite = session.tokens.cache?.write || 0
+  if (!session?.tokens) return null;
+  const input = session.tokens.input || 0;
+  const output = session.tokens.output || 0;
+  const reasoning = session.tokens.reasoning || 0;
+  const cacheRead = session.tokens.cache?.read || 0;
+  const cacheWrite = session.tokens.cache?.write || 0;
   return {
     tokens: headlineTokens(input, output, reasoning),
     reqs: 0,
@@ -221,37 +210,37 @@ function sumSessionRollup(session: Session | undefined): TokenStats | null {
     reasoning,
     cacheRead,
     cacheWrite,
-  }
+  };
 }
 
 function lastTurnStats(msgs: ReadonlyArray<Message>): TokenStats {
-  const assistantMsgs = msgs.filter(isAssistantWithTokens)
-  const lastMsg = [...assistantMsgs].reverse().find(m => (m.tokens.input || 0) > 0)
-  if (!lastMsg) return EMPTY
+  const assistantMsgs = msgs.filter(isAssistantWithTokens);
+  const lastMsg = [...assistantMsgs].reverse().find((m) => (m.tokens.input || 0) > 0);
+  if (!lastMsg) return EMPTY;
 
   // One user turn can produce several assistant rounds (tool loops).
-  const turn = assistantMsgs.filter(m => m.parentID === lastMsg.parentID)
-  return sumMessages(turn)
+  const turn = assistantMsgs.filter((m) => m.parentID === lastMsg.parentID);
+  return sumMessages(turn);
 }
 
 /** Timestamp of the user message that starts the latest assistant turn. */
 function lastTurnStartedAt(msgs: ReadonlyArray<Message>): number | null {
-  const assistantMsgs = msgs.filter(isAssistantWithTokens)
-  const lastMsg = [...assistantMsgs].reverse().find(m => (m.tokens.input || 0) > 0)
-  if (!lastMsg) return null
-  const user = msgs.find(m => m.id === lastMsg.parentID)
-  return user?.time.created ?? lastMsg.time.created
+  const assistantMsgs = msgs.filter(isAssistantWithTokens);
+  const lastMsg = [...assistantMsgs].reverse().find((m) => (m.tokens.input || 0) > 0);
+  if (!lastMsg) return null;
+  const user = msgs.find((m) => m.id === lastMsg.parentID);
+  return user?.time.created ?? lastMsg.time.created;
 }
 
 function addStats(into: TokenStats, add: TokenStats) {
-  into.tokens += add.tokens
-  into.reqs += add.reqs
-  into.cost += add.cost
-  into.input += add.input
-  into.output += add.output
-  into.reasoning += add.reasoning
-  into.cacheRead += add.cacheRead
-  into.cacheWrite += add.cacheWrite
+  into.tokens += add.tokens;
+  into.reqs += add.reqs;
+  into.cost += add.cost;
+  into.input += add.input;
+  into.output += add.output;
+  into.reasoning += add.reasoning;
+  into.cacheRead += add.cacheRead;
+  into.cacheWrite += add.cacheWrite;
 }
 
 function mergeStats(a: TokenStats, b: TokenStats): TokenStats {
@@ -264,32 +253,28 @@ function mergeStats(a: TokenStats, b: TokenStats): TokenStats {
     reasoning: a.reasoning + b.reasoning,
     cacheRead: a.cacheRead + b.cacheRead,
     cacheWrite: a.cacheWrite + b.cacheWrite,
-  }
+  };
 }
 
 async function statsForSession(api: TuiPluginApi, session: Session): Promise<TokenStats> {
   // Prefer live TUI message state when the child is already loaded.
-  const local = api.state.session.messages(session.id)
-  if (local.length > 0) return sumMessages(local)
+  const local = api.state.session.messages(session.id);
+  if (local.length > 0) return sumMessages(local);
 
   // Fall back to HTTP messages for accurate request counts.
   try {
     // SDK v2 takes flat params keyed exactly `sessionID` — buildClientParams
     // silently drops unknown keys (e.g. a nested `path` object), leaving the
     // {sessionID} URL placeholder unsubstituted and the request failing.
-    const msgRes = await api.client.session.messages({ sessionID: session.id })
-    const infos = (msgRes.data ?? []).map(row => row.info)
-    if (infos.length > 0) return sumMessages(infos)
+    const msgRes = await api.client.session.messages({ sessionID: session.id });
+    const infos = (msgRes.data ?? []).map((row) => row.info);
+    if (infos.length > 0) return sumMessages(infos);
   } catch {
     // ignore and try session rollup fields
   }
 
   // Last resort: session-level tokens/cost (no request count).
-  return (
-    sumSessionRollup(session) ??
-    sumSessionRollup(api.state.session.get(session.id)) ??
-    EMPTY
-  )
+  return sumSessionRollup(session) ?? sumSessionRollup(api.state.session.get(session.id)) ?? EMPTY;
 }
 
 /**
@@ -302,82 +287,78 @@ async function loadChildStats(
   rootSessionId: string,
   createdAfter: number | null = null,
 ): Promise<TokenStats> {
-  const totals = { ...EMPTY }
-  const seen = new Set<string>([rootSessionId])
+  const totals = { ...EMPTY };
+  const seen = new Set<string>([rootSessionId]);
   // Queue of session IDs whose direct children we should expand.
   // For "last turn", only seed with root; then only expand children that pass the time filter
   // (or any descendant of a matched child).
-  type QueueItem = { id: string; includeSubtree: boolean }
-  const queue: QueueItem[] = [{ id: rootSessionId, includeSubtree: createdAfter === null }]
+  type QueueItem = { id: string; includeSubtree: boolean };
+  const queue: QueueItem[] = [{ id: rootSessionId, includeSubtree: createdAfter === null }];
 
   while (queue.length) {
-    const { id: parentId, includeSubtree } = queue.shift()!
-    let children: Session[] = []
+    const { id: parentId, includeSubtree } = queue.shift()!;
+    let children: Session[] = [];
     try {
-      const res = await api.client.session.children({ sessionID: parentId })
-      if (res.data) children = res.data
+      const res = await api.client.session.children({ sessionID: parentId });
+      if (res.data) children = res.data;
     } catch {
-      continue
+      continue;
     }
 
     for (const child of children) {
-      if (seen.has(child.id)) continue
-      seen.add(child.id)
+      if (seen.has(child.id)) continue;
+      seen.add(child.id);
 
       const matchesTurn =
         createdAfter === null ||
         includeSubtree ||
-        (typeof child.time?.created === "number" && child.time.created >= createdAfter)
+        (typeof child.time?.created === "number" && child.time.created >= createdAfter);
 
-      if (!matchesTurn) continue
+      if (!matchesTurn) continue;
 
-      queue.push({ id: child.id, includeSubtree: true })
-      addStats(totals, await statsForSession(api, child))
+      queue.push({ id: child.id, includeSubtree: true });
+      addStats(totals, await statsForSession(api, child));
     }
   }
 
-  return totals
+  return totals;
 }
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
-  return `${Math.round(n)}`
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return `${Math.round(n)}`;
 }
 
 function fmtCost(n: number) {
-  if (n >= 1) return `$${n.toFixed(2)}`
-  if (n >= 0.01) return `$${n.toFixed(3)}`
-  return `$${n.toFixed(4)}`
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  if (n >= 0.01) return `$${n.toFixed(3)}`;
+  return `$${n.toFixed(4)}`;
 }
 
-function BreakdownLine(props: {
-  value: number
-  label: string
-  muted: unknown
-}) {
+function BreakdownLine(props: { value: number; label: string; muted: unknown }) {
   return (
     <Show when={props.value > 0}>
       <text>
-        <span style={{ fg: props.muted }}>  {fmt(props.value)}</span>
+        <span style={{ fg: props.muted }}> {fmt(props.value)}</span>
         <span style={{ fg: props.muted }}> {props.label}</span>
       </text>
     </Show>
-  )
+  );
 }
 
 /** Module-level so expand state is not reset when TokenFooter re-renders. */
 function TokenSection(props: {
-  title: string
-  stats: TokenStats
-  theme: () => { text: unknown; textMuted: unknown }
+  title: string;
+  stats: TokenStats;
+  theme: () => { text: unknown; textMuted: unknown };
   /** When set, title uses this color (e.g. yellow while working). */
-  titleColor?: unknown
+  titleColor?: unknown;
   /** Session only: current context-window fill (replaces built-in Context). */
-  context?: ContextFill | null
+  context?: ContextFill | null;
 }) {
-  const [expanded, setExpanded] = createSignal(false)
-  const muted = () => props.theme().textMuted
+  const [expanded, setExpanded] = createSignal(false);
+  const muted = () => props.theme().textMuted;
 
   return (
     <box>
@@ -393,7 +374,7 @@ function TokenSection(props: {
           </Show>
         </text>
       </Show>
-      <box onMouseDown={() => setExpanded(v => !v)}>
+      <box onMouseDown={() => setExpanded((v) => !v)}>
         <text>
           <span style={{ fg: muted() }}>{fmt(props.stats.tokens)}</span>
           <span style={{ fg: muted() }}> tokens</span>
@@ -420,49 +401,45 @@ function TokenSection(props: {
         <span style={{ fg: muted() }}> spent</span>
       </text>
     </box>
-  )
+  );
 }
 
-function TokenFooter(props: {
-  api: TuiPluginApi
-  session_id: string
-  config: TrackerConfig
-}) {
-  const theme = () => props.api.theme.current
-  const cfg = () => props.config
+function TokenFooter(props: { api: TuiPluginApi; session_id: string; config: TrackerConfig }) {
+  const theme = () => props.api.theme.current;
+  const cfg = () => props.config;
 
   const needChildren = () =>
     (!cfg().last_turn.hidden && cfg().last_turn.include_children) ||
-    (!cfg().session.hidden && cfg().session.include_children)
+    (!cfg().session.hidden && cfg().session.include_children);
 
-  const [tick, setTick] = createSignal(0)
-  const [allChildren, setAllChildren] = createSignal<TokenStats>(EMPTY)
-  const [turnChildren, setTurnChildren] = createSignal<TokenStats>(EMPTY)
+  const [tick, setTick] = createSignal(0);
+  const [allChildren, setAllChildren] = createSignal<TokenStats>(EMPTY);
+  const [turnChildren, setTurnChildren] = createSignal<TokenStats>(EMPTY);
 
-  const timer = setInterval(() => setTick(t => t + 1), 2000)
-  onCleanup(() => clearInterval(timer))
-
-  createEffect(() => {
-    props.session_id
-    setAllChildren(EMPTY)
-    setTurnChildren(EMPTY)
-  })
+  const timer = setInterval(() => setTick((t) => t + 1), 2000);
+  onCleanup(() => clearInterval(timer));
 
   createEffect(() => {
-    const sessionId = props.session_id
-    const config = cfg()
-    tick()
+    props.session_id;
+    setAllChildren(EMPTY);
+    setTurnChildren(EMPTY);
+  });
+
+  createEffect(() => {
+    const sessionId = props.session_id;
+    const config = cfg();
+    tick();
 
     if (!needChildren()) {
-      setAllChildren(EMPTY)
-      setTurnChildren(EMPTY)
-      return
+      setAllChildren(EMPTY);
+      setTurnChildren(EMPTY);
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
     void (async () => {
-      const msgs = props.api.state.session.messages(sessionId)
-      const startedAt = lastTurnStartedAt(msgs)
+      const msgs = props.api.state.session.messages(sessionId);
+      const startedAt = lastTurnStartedAt(msgs);
 
       const [all, turn] = await Promise.all([
         config.session.include_children && !config.session.hidden
@@ -471,50 +448,49 @@ function TokenFooter(props: {
         config.last_turn.include_children && !config.last_turn.hidden
           ? loadChildStats(props.api, sessionId, startedAt)
           : Promise.resolve(EMPTY),
-      ])
+      ]);
 
-      if (cancelled) return
-      setAllChildren(all)
-      setTurnChildren(turn)
-    })()
+      if (cancelled) return;
+      setAllChildren(all);
+      setTurnChildren(turn);
+    })();
 
     onCleanup(() => {
-      cancelled = true
-    })
-  })
+      cancelled = true;
+    });
+  });
 
   const parentData = createMemo(() => {
-    tick()
-    const state = props.api.state
-    const status = state.session.status(props.session_id)
-    const isBusy = status?.type === "busy"
-    const msgs = state.session.messages(props.session_id)
+    tick();
+    const state = props.api.state;
+    const status = state.session.status(props.session_id);
+    const isBusy = status?.type === "busy";
+    const msgs = state.session.messages(props.session_id);
     return {
       last: lastTurnStats(msgs),
       parent: sumMessages(msgs),
       context: contextFill(msgs, state.provider),
       isBusy,
-    }
-  })
+    };
+  });
 
   const lastTurnData = createMemo(() => {
-    const base = parentData().last
-    if (!cfg().last_turn.include_children) return base
-    return mergeStats(base, turnChildren())
-  })
+    const base = parentData().last;
+    if (!cfg().last_turn.include_children) return base;
+    return mergeStats(base, turnChildren());
+  });
 
   const sessionData = createMemo(() => {
-    const base = parentData().parent
-    if (!cfg().session.include_children) return base
-    return mergeStats(base, allChildren())
-  })
+    const base = parentData().parent;
+    if (!cfg().session.include_children) return base;
+    return mergeStats(base, allChildren());
+  });
 
-  const showLast = () => !cfg().last_turn.hidden
-  const showSession = () => !cfg().session.hidden
+  const showLast = () => !cfg().last_turn.hidden;
+  const showSession = () => !cfg().session.hidden;
 
   // Yellow while working: theme.secondary is the yellow token in forge (#ffd042).
-  const lastTitleColor = () =>
-    parentData().isBusy ? theme().secondary : theme().text
+  const lastTitleColor = () => (parentData().isBusy ? theme().secondary : theme().text);
 
   return (
     <box gap={1}>
@@ -535,14 +511,14 @@ function TokenFooter(props: {
         />
       ) : null}
     </box>
-  )
+  );
 }
 
 // Primary usage strip (built-in Context is disabled by Forge setup).
-const SIDEBAR_ORDER = 150
+const SIDEBAR_ORDER = 150;
 
 const tui: TuiPlugin = async (api, options) => {
-  const config = parseConfig(options)
+  const config = parseConfig(options);
 
   api.slots.register({
     order: SIDEBAR_ORDER,
@@ -551,17 +527,11 @@ const tui: TuiPlugin = async (api, options) => {
         // Untrack component creation (see progress-relay.tsx): without it the
         // host's tracked scope remounts the footer on every internal signal
         // update, resetting expand state and discarding fetched child stats.
-        const sessionId = props.session_id
-        return untrack(() => (
-          <TokenFooter
-            api={api}
-            session_id={sessionId}
-            config={config}
-          />
-        ))
+        const sessionId = props.session_id;
+        return untrack(() => <TokenFooter api={api} session_id={sessionId} config={config} />);
       },
     },
-  })
-}
+  });
+};
 
-export default { id: "token-tracker", tui } satisfies TuiPluginModule
+export default { id: "token-tracker", tui } satisfies TuiPluginModule;
