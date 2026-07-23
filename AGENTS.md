@@ -14,16 +14,7 @@ the terminal before OpenCode starts. Outside Forge these may be missing.
 - Model allowlist/catalog: `FORGE_OPENCODE_MODEL_CATALOG_JSON`
   (setup may re-merge `opencode.jsonc` when the catalog hash changes)
 
-Config is re-merged by Forge setup (`forge-opencode-setup.mjs`); treat
-broker/MCP/catalog sections and TUI theme/`forge-tui` as managed unless you
-know what you're doing.
-
-User overlays lived under this repo and re-applied with `npm run configure`
-(`scripts/configure.ts`):
-
-- `opencode.config.jsonc` → `opencode.jsonc`
-- `tui.config.jsonc` → `tui.json`
-
-Re-run configure after Forge re-setup. Prefer `{env:VAR}` interpolation for
-Forge-owned secrets; do not hardcode broker tokens or assume a public
-OpenRouter key.
+Edit `opencode.jsonc` and `tui.json` directly. Prefer `{env:VAR}` interpolation
+for Forge-owned secrets; do not hardcode broker tokens or assume a public
+OpenRouter key. Treat broker/MCP/catalog sections and TUI theme/`forge-tui` as
+Forge-managed unless you know what you're doing.
