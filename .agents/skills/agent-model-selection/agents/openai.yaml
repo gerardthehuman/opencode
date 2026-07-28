@@ -1,0 +1,17 @@
+interface:
+  display_name: agent model selection
+  short_description: Create or revise AI model presets for multi-agent workflows by
+    matching a user-provided pool of models and variants to agent roles, capabilities,
+    context needs, benchmark evidence, and cost per successful task. Use when choosing
+    models for agents, comparing models across providers, defining quality or lean
+    presets, or revisiting assignments after pricing, quota, benchmark, capability,
+    or usage changes.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+    - chatgpt
+    - codex
+    - api
+    - atlas
+  allow_implicit_invocation: true
