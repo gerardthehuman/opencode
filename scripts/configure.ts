@@ -1,0 +1,126 @@
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath, URL } from "node:url";
+import { parseJSONC, parseJSON, stringifyJSON, stringifyJSONC } from "confbox";
+
+type Plugin = string | [string, Record<string, unknown>];
+
+const __root = fileURLToPath(new URL("../", import.meta.url));
+
+const resolve = (name: string) => {
+  const extensions = {
+    jsonc: [parseJSONC, stringifyJSONC],
+    json: [parseJSON, stringifyJSON],
+  };
+
+  for (const [ext, [parse, stringify]] of Object.entries(extensions)) {
+    const path = `${__root}/${name}.${ext}`;
+    if (existsSync(path)) {
+      return { path, parse, stringify };
+    }
+  }
+
+  return null;
+};
+
+const configure = (
+  name: string,
+  mutate: (config: Record<string, unknown>) => Record<string, unknown>,
+) => {
+  const config = resolve(name);
+
+  if (!config) {
+    console.error(`Configuration file "${name}" not found.`);
+    process.exit(1);
+  }
+
+  const input = config.parse(readFileSync(config.path, "utf8"));
+  const output = mutate(input as Record<string, unknown>);
+
+  writeFileSync(config.path, config.stringify(output), "utf8");
+};
+
+configure("opencode", (config) => {
+  const agents = (config.agent ??= {}) as Record<string, Record<string, unknown>>;
+  const agentOverrides = {
+    lead: {
+      model: "openrouter/x-ai/grok-4.5",
+      variant: "high",
+    },
+    plan: {
+      model: "openrouter/z-ai/glm-5.2",
+      variant: "xhigh",
+    },
+    code: {
+      model: "openrouter/z-ai/glm-5.2",
+      variant: "xhigh",
+    },
+    explore: {
+      model: "openrouter/google/gemini-3.1-flash-lite",
+      variant: "low",
+    },
+    research: {
+      model: "openrouter/google/gemini-3.1-flash-lite",
+      variant: "medium",
+    },
+    review: {
+      model: "openrouter/x-ai/grok-4.5",
+      variant: "high",
+    },
+    lens: {
+      model: "openrouter/google/gemini-3.1-flash-lite",
+      variant: "high",
+    },
+  };
+
+  for (const [name, override] of Object.entries(agentOverrides)) {
+    agents[name] = { ...(agents[name] ?? {}), ...override };
+  }
+
+  config.model = "openrouter/x-ai/grok-4.5";
+  config.small_model = "openrouter/x-ai/grok-build-0.1";
+
+  config.plugin = ((config.plugin || []) as Plugin[]).reduce(
+    (plugins: Plugin[], plugin: Plugin) => {
+      const name: string | null =
+        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
+
+      if (name) {
+        // Overwrite the @plannotator/opencode configuration
+        if (name.startsWith("@plannotator/opencode")) {
+          plugins.push([
+            "@plannotator/opencode@0.25.0",
+            {
+              workflow: "all-agents",
+              planningAgents: ["plan"],
+            },
+          ]);
+        }
+      }
+
+      return plugins;
+    },
+    [],
+  );
+
+  return config;
+});
+
+configure("tui", (config) => {
+  config.plugin = ((config.plugin || []) as Plugin[])
+    .reduce((plugins: Plugin[], plugin: Plugin) => {
+      const name: string | null =
+        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
+
+      if (name) {
+        // Remove all plugins except for forge-tui
+        if (name === "./plugins/forge-tui.tsx") {
+          plugins.push(plugin);
+        }
+      }
+
+      return plugins;
+    }, [])
+    .concat([["opencode-session-metrics@0.2.3", { context: { show: true } }]]);
+
+  return config;
+});

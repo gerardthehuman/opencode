@@ -1,5 +1,8 @@
 pre-commit:
   jobs:
+    - name: configure
+      run: npm run configure && git add opencode.* tui.*
+      stage_fixed: true
     - name: format
       run: npx oxfmt --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true

@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "configure": "tsx scripts/configure.ts",
     "format": "oxfmt",
     "prepare": "lefthook install"
   },
@@ -10,11 +11,16 @@
     "@opentui/solid": "^0.4.3"
   },
   "devDependencies": {
+    "@types/node": "latest",
+    "confbox": "^0.2.4",
     "lefthook": "^2.1.10",
-    "oxfmt": "^0.60.0"
+    "oxfmt": "^0.60.0",
+    "tsx": "^4.23.1"
   },
   "allowScripts": {
     "lefthook@2.1.10": true,
-    "msgpackr-extract@3.0.4": true
+    "msgpackr-extract@3.0.4": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
   }
 }
