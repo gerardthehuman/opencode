@@ -1,8 +1,17 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { parseJSONC, parseJSON, stringifyJSON, stringifyJSONC } from "confbox";
+import diif from "microdiff";
 
 type Plugin = string | [string, Record<string, unknown>];
+type Config = Record<string, unknown> & {
+  agent?: Record<string, Record<string, unknown>>;
+  instructions?: string[];
+  permission?: Record<string, unknown> & {
+    external_directory?: Record<string, string>;
+  };
+  plugin?: Plugin[];
+};
 
 const __root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -22,10 +31,28 @@ const resolve = (name: string) => {
   return null;
 };
 
-const configure = (
-  name: string,
-  mutate: (config: Record<string, unknown>) => Record<string, unknown>,
-) => {
+const report = (from: Config, to: Config) => {
+  for (const change of diif(from, to)) {
+    const path = change.path
+      .map((x, i) => (typeof x === "number" ? `[${x}]` : i ? `.${x}` : x))
+      .join("");
+
+    switch (change.type) {
+      case "CHANGE":
+        console.log(
+          `~ ${path}: ${JSON.stringify(change.oldValue)} → ${JSON.stringify(change.value)}`,
+        );
+        break;
+      case "CREATE":
+        console.log(`+ ${path}: ${JSON.stringify(change.value)}`);
+        break;
+      default:
+        console.log(`- ${path}: ${JSON.stringify(change.oldValue)}`);
+    }
+  }
+};
+
+const configure = (name: string, mutate: (config: Config) => Config) => {
   const config = resolve(name);
 
   if (!config) {
@@ -33,80 +60,88 @@ const configure = (
     process.exit(1);
   }
 
-  const input = config.parse(readFileSync(config.path, "utf8"));
-  const output = mutate(input as Record<string, unknown>);
+  const input = config.parse(readFileSync(config.path, "utf8")) as Config;
+  const output = mutate(structuredClone(input) as Config);
 
   writeFileSync(config.path, config.stringify(output), "utf8");
+  report(input, output);
+};
+
+const agents = {
+  lead: {
+    model: "openrouter/x-ai/grok-4.5",
+    variant: "high",
+  },
+  plan: {
+    model: "openrouter/z-ai/glm-5.2",
+    variant: "xhigh",
+  },
+  code: {
+    model: "openrouter/z-ai/glm-5.2",
+    variant: "xhigh",
+  },
+  explore: {
+    model: "openrouter/google/gemini-3.1-flash-lite",
+    variant: "low",
+  },
+  research: {
+    model: "openrouter/google/gemini-3.1-flash-lite",
+    variant: "medium",
+  },
+  review: {
+    model: "openrouter/x-ai/grok-4.5",
+    variant: "high",
+  },
+  lens: {
+    model: "openrouter/google/gemini-3.1-flash-lite",
+    variant: "high",
+  },
 };
 
 configure("opencode", (config) => {
-  const agents = (config.agent ??= {}) as Record<string, Record<string, unknown>>;
-  const agentOverrides = {
-    lead: {
-      model: "openrouter/x-ai/grok-4.5",
-      variant: "high",
-    },
-    plan: {
-      model: "openrouter/z-ai/glm-5.2",
-      variant: "xhigh",
-    },
-    code: {
-      model: "openrouter/z-ai/glm-5.2",
-      variant: "xhigh",
-    },
-    explore: {
-      model: "openrouter/google/gemini-3.1-flash-lite",
-      variant: "low",
-    },
-    research: {
-      model: "openrouter/google/gemini-3.1-flash-lite",
-      variant: "medium",
-    },
-    review: {
-      model: "openrouter/x-ai/grok-4.5",
-      variant: "high",
-    },
-    lens: {
-      model: "openrouter/google/gemini-3.1-flash-lite",
-      variant: "high",
-    },
-  };
-
-  for (const [name, override] of Object.entries(agentOverrides)) {
-    agents[name] = { ...(agents[name] ?? {}), ...override };
-  }
-
+  config.agent = config.agent || {};
   config.model = "openrouter/x-ai/grok-4.5";
   config.small_model = "openrouter/x-ai/grok-build-0.1";
+  config.default_agent = "lead";
 
-  config.plugin = ((config.plugin || []) as Plugin[]).reduce(
-    (plugins: Plugin[], plugin: Plugin) => {
-      const name: string | null =
-        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
+  config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
 
-      if (name) {
-        // Overwrite the @plannotator/opencode configuration
-        if (name.startsWith("@plannotator/opencode")) {
-          plugins.push([
-            "@plannotator/opencode@0.25.0",
-            {
-              workflow: "all-agents",
-              planningAgents: ["plan"],
-            },
-          ]);
-        }
+  config.permission = config.permission || {};
+  config.permission.question = "allow";
+  config.permission.external_directory = {
+    ...(config.permission.external_directory || {}),
+    "*": "allow",
+  };
+
+  for (const [name, override] of Object.entries(agents)) {
+    config.agent[name] = { ...(config.agent[name] ?? {}), ...override };
+  }
+
+  config.plugin = (config.plugin || []).reduce((plugins: Plugin[], plugin: Plugin) => {
+    const name: string | null =
+      typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
+
+    if (name) {
+      // Overwrite the @plannotator/opencode configuration
+      if (name.startsWith("@plannotator/opencode")) {
+        plugins.push([
+          "@plannotator/opencode@0.25.0",
+          {
+            workflow: "all-agents",
+            planningAgents: ["plan"],
+          },
+        ]);
       }
+    }
 
-      return plugins;
-    },
-    [],
-  );
+    return plugins;
+  }, []);
 
   return config;
 });
 
 configure("tui", (config) => {
-  config.plugin = ((config.plugin || []) as Plugin[])
+  config.plugin = (config.plugin || [])
     .reduce((plugins: Plugin[], plugin: Plugin) => {
       const name: string | null =
         typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
