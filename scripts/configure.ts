@@ -68,6 +68,11 @@ const configure = (name: string, mutate: (config: Config) => Config) => {
 };
 
 const agents = {
+  chat: {
+    description: "A fast, general-purpose agent.",
+    mode: "primary",
+    model: "openrouter/minimax/minimax-m3",
+  },
   lead: {
     model: "openrouter/x-ai/grok-4.5",
     variant: "high",
@@ -77,24 +82,24 @@ const agents = {
     variant: "xhigh",
   },
   code: {
-    model: "openrouter/z-ai/glm-5.2",
-    variant: "xhigh",
+    model: "openrouter/x-ai/grok-4.5",
+    variant: "high",
   },
   explore: {
-    model: "openrouter/google/gemini-3.1-flash-lite",
-    variant: "low",
+    model: "openrouter/minimax/minimax-m3",
+    variant: undefined,
   },
   research: {
-    model: "openrouter/google/gemini-3.1-flash-lite",
-    variant: "medium",
+    model: "openrouter/minimax/minimax-m3",
+    variant: undefined,
   },
   review: {
     model: "openrouter/x-ai/grok-4.5",
     variant: "high",
   },
   lens: {
-    model: "openrouter/google/gemini-3.1-flash-lite",
-    variant: "high",
+    model: "openrouter/minimax/minimax-m3",
+    variant: undefined,
   },
 };
 
