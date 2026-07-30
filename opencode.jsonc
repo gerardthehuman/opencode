@@ -55,7 +55,7 @@
   },
   "agent": {
     "lead": {
-      "model": "openrouter/x-ai/grok-4.5",
+      "model": "openrouter/moonshotai/kimi-k3",
       "variant": "high",
     },
     "plan": {
@@ -67,10 +67,10 @@
       "variant": "high",
     },
     "explore": {
-      "model": "openrouter/minimax/minimax-m3",
+      "model": "openrouter/deepseek/deepseek-v4-pro",
     },
     "research": {
-      "model": "openrouter/minimax/minimax-m3",
+      "model": "openrouter/deepseek/deepseek-v4-pro",
     },
     "review": {
       "model": "openrouter/x-ai/grok-4.5",

@@ -82,7 +82,7 @@ const agents = {
     model: "openrouter/minimax/minimax-m3",
   },
   lead: {
-    model: "openrouter/x-ai/grok-4.5",
+    model: "openrouter/moonshotai/kimi-k3",
     variant: "high",
   },
   plan: {
@@ -94,11 +94,11 @@ const agents = {
     variant: "high",
   },
   explore: {
-    model: "openrouter/minimax/minimax-m3",
+    model: "openrouter/deepseek/deepseek-v4-pro",
     variant: undefined,
   },
   research: {
-    model: "openrouter/minimax/minimax-m3",
+    model: "openrouter/deepseek/deepseek-v4-pro",
     variant: undefined,
   },
   review: {
