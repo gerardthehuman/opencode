@@ -1,46 +1,104 @@
-# OpenCode Configuration
+# OpenCode Configuration for Forge
 
-This is an [OpenCode](https://opencode.ai/) configuration directory for use with the [Humanforce Forge](https://docs.forgeworkspace.dev/) desktop app.
+This repository adds an opinionated workflow to the
+[Humanforce Forge](https://docs.forgeworkspace.dev/) OpenCode setup.
 
-> Forge provides access to select models from OpenRouter, an MCP server to interact with the desktop app, and bundled plugins.
->
-> For modifying the configuration, refer to the [OpenCode documentation](https://opencode.ai/docs/config/).
+Forge manages the OpenRouter broker, model catalog, and desktop MCP connection. The sections below describe the local overrides.
 
-## Features
+## Agents
 
-This configuration is optimized for a subagent-driven workflow powered by the following custom agents.
+OpenCode starts with `lead` instead of its default agent. `lead` owns decisions
+and final responses, then delegates bounded work to specialists.
 
-- **Lead** — primary orchestrator; decides, delegates to subagents, owns the final answer
-- **Plan** — primary planner; evidence-based plans via explore/research
-- **Code** — implements scoped code changes from clear instructions
-- **Explore** — scoped local discovery and technical probes
-- **Research** — external docs, APIs, and changelog lookup
-- **Review** — bounded code review with evidence
-- **Lens** — multimodal analysis (images, PDFs, screenshots)
+| Agent      | Mode                | Model             | Role                                 |
+| ---------- | ------------------- | ----------------- | ------------------------------------ |
+| `lead`     | Primary             | Kimi K3 (`high`)  | Orchestration and decisions          |
+| `plan`     | Primary or subagent | GLM 5.2 (`xhigh`) | Evidence-based plans                 |
+| `code`     | Subagent            | Grok 4.5 (`high`) | Scoped implementation                |
+| `explore`  | Subagent            | DeepSeek V4 Pro   | Local discovery and technical probes |
+| `research` | Subagent            | DeepSeek V4 Pro   | External documentation and research  |
+| `review`   | Subagent            | Grok 4.5 (`high`) | Read-only code review                |
+| `lens`     | Subagent            | MiniMax M3        | Visual and document analysis         |
+| `chat`     | Primary             | MiniMax M3        | Fast general conversation            |
 
-### Commands
+Specialists have narrow permissions and explicit stop conditions. Longer tasks
+emit structured `[PROGRESS]` updates.
 
-- **orca-worktree** — create an Orca worktree and launch Forge with a task handoff
+## Models
 
-### Plugins
+The default model is Grok 4.5. Grok Build handles small-model tasks. Agent
+assignments are pinned by `scripts/configure.ts`; Forge still manages the
+available model catalog and broker credentials.
 
-The following plugins are also installed.
+## Plugins
 
-- [**Plannotator**](https://plannotator.ai/) — interface for annotating plans and code changes
-- **Token Tracker** — token and cost usage in the TUI sidebar
-- **Progress Relay** — live subagent progress in the TUI sidebar
-- **Forge TUI** — Forge-managed desktop TUI integration
+### OpenCode
 
-## Installation
+- [Plannotator](https://plannotator.ai/) `0.25.0` annotates plans and code
+  changes for all agents.
+- `@tarquinen/opencode-dcp` prunes context dynamically using `dcp.jsonc`.
+- `opencode-pty` provides PTY-backed terminals.
 
-Copy the contents of this directory to your local machine at `~/.config/opencode`.
+### TUI
+
+- `@tarquinen/opencode-dcp` integrates context pruning.
+- `opencode-session-metrics` `0.2.3` shows session and context usage.
+
+Forge's theme and local `forge-tui` logo integration remain Forge-managed.
+Local plugin files are inactive unless registered in `tui.json`. Currently,
+`done-notifier`, `open-web`, `progress-relay`, and `token-tracker` are not
+loaded.
+
+## Commands
+
+- `/insights` reports Forge usage, OpenCode statistics, and repository activity.
+- `/orca-worktree` launches Forge in a new Orca worktree with a task handoff.
+- `/plannotator-annotate`, `/plannotator-last`, and `/plannotator-review`
+  open Plannotator workflows.
+
+## Tools
+
+Beyond Forge's desktop MCP server, the configuration enables:
+
+- Context7 for library documentation (`CONTEXT7_API_KEY`)
+- grep.app for public GitHub code search
+- Exa for web search (`EXA_API_KEY`)
+
+It also loads global instructions from `~/.agents/AGENTS.md` and discovers
+skills from `~/.codex/skills`.
+
+## Permissions
+
+Agent questions and all external-directory access are allowed. Explicit
+directory entries also cover `/tmp`, `/var`, and `~/.agents`.
+
+Review these settings before using the configuration outside a trusted local
+development environment.
+
+## Setup
+
+Clone the repository and install dependencies:
 
 ```sh
 git clone https://github.com/gerardthehuman/opencode.git ~/.config/opencode
 cd ~/.config/opencode
-npm install
+
+# Use Bun, OpenCode, or Forge
+bun install
+BUN_BE_BUN=1 opencode install
+BUN_BE_BUN=1 forge install
 ```
 
-Run the Forge desktop application and install the Forge CLI. Forge may manage
-broker/MCP/catalog fields and the TUI theme/`forge-tui` plugin; edit
-`opencode.jsonc` and `tui.json` directly for agents, plugins, and local prefs.
+Launch Forge once to inject its managed settings. After Forge regenerates the
+configuration, reapply the local overrides:
+
+```sh
+# Use Bun, OpenCode, or Forge
+bun run configure
+BUN_BE_BUN=1 opencode run configure
+BUN_BE_BUN=1 forge run configure
+```
+
+Edit `opencode.jsonc` and `tui.json` directly, but never hardcode Forge
+credentials. Forge secrets use `{env:VAR}` interpolation, and managed sections
+may be re-merged when the model catalog changes.
