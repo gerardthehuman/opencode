@@ -39,17 +39,19 @@
         "planningAgents": ["plan"],
       },
     ],
+    "@tarquinen/opencode-dcp",
+    "opencode-pty",
   ],
   "default_agent": "lead",
   "small_model": "openrouter/x-ai/grok-build-0.1",
   "permission": {
-    "question": "allow",
     "external_directory": {
       "/tmp/**": "allow",
       "/var/**": "allow",
       "~/.agents/**": "allow",
       "*": "allow",
     },
+    "question": "allow",
   },
   "agent": {
     "lead": {
@@ -183,6 +185,13 @@
             "output": 16384,
           },
         },
+        "moonshotai/kimi-k3": {
+          "name": "Kimi K3 (Forge)",
+          "limit": {
+            "context": 1000000,
+            "output": 16384,
+          },
+        },
       },
       "whitelist": [
         "deepseek/deepseek-v4-pro",
@@ -194,6 +203,7 @@
         "deepseek/deepseek-v4-flash",
         "minimax/minimax-m3",
         "google/gemini-3.1-flash-lite",
+        "moonshotai/kimi-k3",
       ],
     },
   },

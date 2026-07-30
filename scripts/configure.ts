@@ -31,8 +31,16 @@ const resolve = (name: string) => {
   return null;
 };
 
-const report = (from: Config, to: Config) => {
-  for (const change of diif(from, to)) {
+const report = (name: string, from: Config, to: Config) => {
+  const changes = diif(from, to);
+
+  console.log(name);
+
+  if (changes.length === 0) {
+    console.log("  unchanged");
+  }
+
+  for (const change of changes) {
     const path = change.path
       .map((x, i) => (typeof x === "number" ? `[${x}]` : i ? `.${x}` : x))
       .join("");
@@ -40,14 +48,14 @@ const report = (from: Config, to: Config) => {
     switch (change.type) {
       case "CHANGE":
         console.log(
-          `~ ${path}: ${JSON.stringify(change.oldValue)} → ${JSON.stringify(change.value)}`,
+          `  ~ ${path}: ${JSON.stringify(change.oldValue)} → ${JSON.stringify(change.value)}`,
         );
         break;
       case "CREATE":
-        console.log(`+ ${path}: ${JSON.stringify(change.value)}`);
+        console.log(`  + ${path}: ${JSON.stringify(change.value)}`);
         break;
       default:
-        console.log(`- ${path}: ${JSON.stringify(change.oldValue)}`);
+        console.log(`  ${path}: ${JSON.stringify(change.oldValue)}`);
     }
   }
 };
@@ -64,7 +72,7 @@ const configure = (name: string, mutate: (config: Config) => Config) => {
   const output = mutate(structuredClone(input) as Config);
 
   writeFileSync(config.path, config.stringify(output), "utf8");
-  report(input, output);
+  report(name, input, output);
 };
 
 const agents = {
@@ -122,25 +130,27 @@ configure("opencode", (config) => {
     config.agent[name] = { ...(config.agent[name] ?? {}), ...override };
   }
 
-  config.plugin = (config.plugin || []).reduce((plugins: Plugin[], plugin: Plugin) => {
-    const name: string | null =
-      typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
+  config.plugin = (config.plugin || [])
+    .reduce((plugins: Plugin[], plugin: Plugin) => {
+      const name: string | null =
+        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
 
-    if (name) {
-      // Overwrite the @plannotator/opencode configuration
-      if (name.startsWith("@plannotator/opencode")) {
-        plugins.push([
-          "@plannotator/opencode@0.25.0",
-          {
-            workflow: "all-agents",
-            planningAgents: ["plan"],
-          },
-        ]);
+      if (name) {
+        // Overwrite the @plannotator/opencode configuration
+        if (name.startsWith("@plannotator/opencode")) {
+          plugins.push([
+            "@plannotator/opencode@0.25.0",
+            {
+              workflow: "all-agents",
+              planningAgents: ["plan"],
+            },
+          ]);
+        }
       }
-    }
 
-    return plugins;
-  }, []);
+      return plugins;
+    }, [])
+    .concat(["@tarquinen/opencode-dcp", "opencode-pty"]);
 
   return config;
 });
@@ -160,7 +170,10 @@ configure("tui", (config) => {
 
       return plugins;
     }, [])
-    .concat([["opencode-session-metrics@0.2.3", { context: { show: true } }]]);
+    .concat([
+      "@tarquinen/opencode-dcp",
+      ["opencode-session-metrics@0.2.3", { context: { show: true } }],
+    ]);
 
   return config;
 });

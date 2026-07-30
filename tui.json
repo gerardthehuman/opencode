@@ -3,6 +3,7 @@
   "theme": "forge",
   "plugin": [
     ["./plugins/forge-tui.tsx", {}],
+    "@tarquinen/opencode-dcp",
     [
       "opencode-session-metrics@0.2.3",
       {
