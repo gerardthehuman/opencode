@@ -98,6 +98,14 @@ Keep fan-out proportional: prefer 2–4 concurrent workers. Wide fan-out on a sm
 
 When parallel results arrive, reconcile them before acting. Contradictory findings are a signal to spot-check, not to average.
 
+## Content search
+
+When you or a worker must search file contents:
+
+- Prefer **`rg` (ripgrep)** when available (Forge ships it on the integrated terminal PATH when bundled).
+- If `rg` is missing, fall back to the built-in `grep` tool or system `grep` — do not block on installing tools.
+- Tell `@explore` to use `rg` first for content search; do not instruct slow recursive `grep -r` when `rg` works.
+
 ## Cost
 
 When delegating, choose the narrowest scope that can answer the next decision.
