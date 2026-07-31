@@ -55,7 +55,7 @@ const report = (name: string, from: Config, to: Config) => {
         console.log(`  + ${path}: ${JSON.stringify(change.value)}`);
         break;
       default:
-        console.log(`  ${path}: ${JSON.stringify(change.oldValue)}`);
+        console.log(`  - ${path}: ${JSON.stringify(change.oldValue)}`);
     }
   }
 };
@@ -140,7 +140,7 @@ configure("opencode", (config) => {
         // Overwrite the @plannotator/opencode configuration
         if (name.startsWith("@plannotator/opencode")) {
           plugins.push([
-            "@plannotator/opencode@0.25.0",
+            "@plannotator/opencode@0.25.1",
             {
               workflow: "all-agents",
               planningAgents: ["plan"],
@@ -151,7 +151,7 @@ configure("opencode", (config) => {
 
       return plugins;
     }, [])
-    .concat(["@tarquinen/opencode-dcp", "opencode-pty"]);
+    .concat(["@franlol/opencode-md-table-formatter", "@tarquinen/opencode-dcp", "opencode-pty"]);
 
   return config;
 });

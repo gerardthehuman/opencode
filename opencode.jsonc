@@ -33,12 +33,13 @@
   },
   "plugin": [
     [
-      "@plannotator/opencode@0.25.0",
+      "@plannotator/opencode@0.25.1",
       {
         "workflow": "all-agents",
         "planningAgents": ["plan"]
       }
     ],
+    "@franlol/opencode-md-table-formatter",
     "@tarquinen/opencode-dcp",
     "opencode-pty"
   ],
