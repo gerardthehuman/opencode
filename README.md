@@ -3,32 +3,29 @@
 This repository adds an opinionated workflow to the
 [Humanforce Forge](https://docs.forgeworkspace.dev/) OpenCode setup.
 
-Forge manages the OpenRouter broker, model catalog, and desktop MCP connection. The sections below describe the local overrides.
+Forge manages the OpenRouter broker, model catalog, and desktop MCP connection.
+This repository includes a `configure` script that applies the overrides below.
 
 ## Agents
 
-OpenCode starts with `lead` instead of its default agent. `lead` owns decisions
-and final responses, then delegates bounded work to specialists.
+Forge ships with multiple preset agents for specific tasks.
+The primary agents, **Lead** and **Plan**, delegate work to the subagents.
 
-| Agent      | Mode                | Model             | Role                                 |
-| ---------- | ------------------- | ----------------- | ------------------------------------ |
-| `lead`     | Primary             | Kimi K3 (`high`)  | Orchestration and decisions          |
-| `plan`     | Primary or subagent | GLM 5.2 (`xhigh`) | Evidence-based plans                 |
-| `code`     | Subagent            | Grok 4.5 (`high`) | Scoped implementation                |
-| `explore`  | Subagent            | DeepSeek V4 Pro   | Local discovery and technical probes |
-| `research` | Subagent            | DeepSeek V4 Pro   | External documentation and research  |
-| `review`   | Subagent            | Grok 4.5 (`high`) | Read-only code review                |
-| `lens`     | Subagent            | MiniMax M3        | Visual and document analysis         |
-| `chat`     | Primary             | MiniMax M3        | Fast general conversation            |
+This repository includes a **Chat** agent for conversations and small,
+quick tasks powered by a low-cost and efficient model.
 
-Specialists have narrow permissions and explicit stop conditions. Longer tasks
-emit structured `[PROGRESS]` updates.
-
-## Models
-
-The default model is Grok 4.5. Grok Build handles small-model tasks. Agent
-assignments are pinned by `scripts/configure.ts`; Forge still manages the
-available model catalog and broker credentials.
+| Agent       | Model                         | Why                                                                                                           |
+| ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Chat        | GPT-5.6 Luna (`medium`)       | Fast, concise, low-cost conversation with broad multimodal and tool support.                                  |
+| Lead        | Grok 4.5 (`high`)             | Strong general and tool judgment with efficient output for orchestration and final decisions.                 |
+| Plan        | GPT-5.6 Terra (`xhigh`)       | Deep reasoning and a large context window suit infrequent, high-leverage architecture and decomposition work. |
+| Code        | Grok 4.5 (`high`)             | Strong same-harness coding results pair a high solve rate with efficient output and fewer agent steps.        |
+| Explore     | GPT-5.6 Luna (`medium`)       | Fast tool use and low output overhead suit frequent bounded discovery across large repositories.              |
+| Research    | GPT-5.6 Terra (`high`)        | Strong long-context synthesis and tool use avoid the extra output overhead of `xhigh`.                        |
+| Review      | Grok 4.5 (`high`)             | Strong code and tool performance make it an efficient choice for finding consequential defects.               |
+| Lens        | Gemini 3.1 Flash Lite (`low`) | Broad image, PDF, video, and audio support covers faithful visual extraction without expensive reasoning.     |
+| Default     | Grok 4.5                      | The safest broad, tool-capable fallback in the available model pool.                                          |
+| Small model | Grok Build 0.1                | A coding-oriented, low-cost route handles lightweight internal tasks without a selectable variant.            |
 
 ## Plugins
 
@@ -98,7 +95,3 @@ bun run configure
 BUN_BE_BUN=1 opencode run configure
 BUN_BE_BUN=1 forge run configure
 ```
-
-Edit `opencode.jsonc` and `tui.json` directly, but never hardcode Forge
-credentials. Forge secrets use `{env:VAR}` interpolation, and managed sections
-may be re-merged when the model catalog changes.

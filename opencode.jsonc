@@ -55,11 +55,11 @@
   },
   "agent": {
     "lead": {
-      "model": "openrouter/moonshotai/kimi-k3",
+      "model": "openrouter/x-ai/grok-4.5",
       "variant": "high"
     },
     "plan": {
-      "model": "openrouter/z-ai/glm-5.2",
+      "model": "openrouter/openai/gpt-5.6-terra",
       "variant": "xhigh"
     },
     "code": {
@@ -67,22 +67,26 @@
       "variant": "high"
     },
     "explore": {
-      "model": "openrouter/deepseek/deepseek-v4-pro"
+      "model": "openrouter/openai/gpt-5.6-luna",
+      "variant": "medium"
     },
     "research": {
-      "model": "openrouter/deepseek/deepseek-v4-pro"
+      "model": "openrouter/openai/gpt-5.6-terra",
+      "variant": "high"
     },
     "review": {
       "model": "openrouter/x-ai/grok-4.5",
       "variant": "high"
     },
     "lens": {
-      "model": "openrouter/minimax/minimax-m3"
+      "model": "openrouter/google/gemini-3.1-flash-lite",
+      "variant": "low"
     },
     "chat": {
       "description": "A fast, general-purpose agent.",
       "mode": "primary",
-      "model": "openrouter/minimax/minimax-m3"
+      "model": "openrouter/openai/gpt-5.6-luna",
+      "variant": "medium"
     }
   },
   "skills": {
@@ -191,6 +195,30 @@
             "context": 1000000,
             "output": 16384
           }
+        },
+        "openai/gpt-5.6-luna": {
+          "name": "GPT 5.6 Luna (Forge)",
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          },
+          "cost": {
+            "input": 0.1,
+            "output": 0.6,
+            "cache_read": 0.6
+          }
+        },
+        "openai/gpt-5.6-terra": {
+          "name": "GPT 5.6 Terra (Forge)",
+          "limit": {
+            "context": 1000000,
+            "output": 16384
+          },
+          "cost": {
+            "input": 1,
+            "output": 6,
+            "cache_read": 1
+          }
         }
       },
       "whitelist": [
@@ -203,7 +231,9 @@
         "deepseek/deepseek-v4-flash",
         "minimax/minimax-m3",
         "google/gemini-3.1-flash-lite",
-        "moonshotai/kimi-k3"
+        "moonshotai/kimi-k3",
+        "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-terra"
       ]
     }
   },

@@ -79,14 +79,15 @@ const agents = {
   chat: {
     description: "A fast, general-purpose agent.",
     mode: "primary",
-    model: "openrouter/minimax/minimax-m3",
+    model: "openrouter/openai/gpt-5.6-luna",
+    variant: "medium",
   },
   lead: {
-    model: "openrouter/moonshotai/kimi-k3",
+    model: "openrouter/x-ai/grok-4.5",
     variant: "high",
   },
   plan: {
-    model: "openrouter/z-ai/glm-5.2",
+    model: "openrouter/openai/gpt-5.6-terra",
     variant: "xhigh",
   },
   code: {
@@ -94,20 +95,20 @@ const agents = {
     variant: "high",
   },
   explore: {
-    model: "openrouter/deepseek/deepseek-v4-pro",
-    variant: undefined,
+    model: "openrouter/openai/gpt-5.6-luna",
+    variant: "medium",
   },
   research: {
-    model: "openrouter/deepseek/deepseek-v4-pro",
-    variant: undefined,
+    model: "openrouter/openai/gpt-5.6-terra",
+    variant: "high",
   },
   review: {
     model: "openrouter/x-ai/grok-4.5",
     variant: "high",
   },
   lens: {
-    model: "openrouter/minimax/minimax-m3",
-    variant: undefined,
+    model: "openrouter/google/gemini-3.1-flash-lite",
+    variant: "low",
   },
 };
 
