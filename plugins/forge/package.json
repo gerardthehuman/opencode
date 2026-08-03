@@ -1,0 +1,22 @@
+{
+  "name": "forge",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./opencode": "./plugins/opencode.ts",
+    "./kilocode": "./plugins/kilocode.ts"
+  },
+  "dependencies": {
+    "@kilocode/plugin": "^7.4.0",
+    "@opencode-ai/models": "^0.0.31",
+    "@opencode-ai/plugin": "^1.18.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "packageManager": "bun@1.13.4"
+}
