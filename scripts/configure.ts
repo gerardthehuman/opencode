@@ -7,6 +7,7 @@ type Plugin = string | [string, Record<string, unknown>];
 type Config = Record<string, unknown> & {
   agent?: Record<string, Record<string, unknown>>;
   instructions?: string[];
+  enabled_providers?: string[];
   permission?: Record<string, unknown> & {
     external_directory?: Record<string, string>;
   };
@@ -75,47 +76,57 @@ const configure = (name: string, mutate: (config: Config) => Config) => {
   report(name, input, output);
 };
 
+const definePlugins = (config: Config, plugins: Plugin[]) => {
+  const getPluginName = (plugin: Plugin) => {
+    if (Array.isArray(plugin)) {
+      return plugin[0];
+    }
+
+    return plugin;
+  };
+
+  const additions = plugins.map(getPluginName);
+  const keep = additions.filter((p) => !additions.includes(getPluginName(p)));
+
+  return keep.concat(plugins);
+};
+
 const agents = {
   chat: {
-    description: "A fast, general-purpose agent.",
-    mode: "primary",
-    model: "openrouter/openai/gpt-5.6-luna",
+    model: "forge/openai/gpt-5.6-luna",
     variant: "medium",
   },
   lead: {
-    model: "openrouter/x-ai/grok-4.5",
-    variant: "high",
-  },
-  plan: {
-    model: "openrouter/openai/gpt-5.6-terra",
+    model: "forge/openai/gpt-5.6-terra",
     variant: "xhigh",
   },
+  plan: {
+    model: "forge/openai/gpt-5.6-terra",
+    variant: "xhigh",
+    disable: true,
+  },
   code: {
-    model: "openrouter/x-ai/grok-4.5",
-    variant: "high",
+    model: "forge/openai/gpt-5.6-luna",
+    variant: "max",
   },
   explore: {
-    model: "openrouter/openai/gpt-5.6-luna",
+    model: "forge/openai/gpt-5.6-luna",
     variant: "medium",
   },
   research: {
-    model: "openrouter/openai/gpt-5.6-terra",
+    model: "forge/openai/gpt-5.6-terra",
     variant: "high",
   },
   review: {
-    model: "openrouter/x-ai/grok-4.5",
+    model: "forge/x-ai/grok-4.5",
     variant: "high",
-  },
-  lens: {
-    model: "openrouter/google/gemini-3.1-flash-lite",
-    variant: "low",
   },
 };
 
 configure("opencode", (config) => {
   config.agent = config.agent || {};
-  config.model = "openrouter/x-ai/grok-4.5";
-  config.small_model = "openrouter/x-ai/grok-build-0.1";
+  config.model = "forge/x-ai/grok-4.5";
+  config.small_model = "forge/x-ai/grok-build-0.1";
   config.default_agent = "lead";
 
   config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
@@ -131,50 +142,28 @@ configure("opencode", (config) => {
     config.agent[name] = { ...(config.agent[name] ?? {}), ...override };
   }
 
-  config.plugin = (config.plugin || [])
-    .reduce((plugins: Plugin[], plugin: Plugin) => {
-      const name: string | null =
-        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
-
-      if (name) {
-        // Overwrite the @plannotator/opencode configuration
-        if (name.startsWith("@plannotator/opencode")) {
-          plugins.push([
-            "@plannotator/opencode@0.25.1",
-            {
-              workflow: "all-agents",
-              planningAgents: ["plan"],
-            },
-          ]);
-        }
-      }
-
-      return plugins;
-    }, [])
-    .concat(["@franlol/opencode-md-table-formatter", "@tarquinen/opencode-dcp", "opencode-pty"]);
+  config.plugin = definePlugins(config, [
+    [
+      "@plannotator/opencode@0.25.1",
+      {
+        workflow: "all-agents",
+        planningAgents: ["plan"],
+      },
+    ],
+    "@franlol/opencode-md-table-formatter",
+    "@tarquinen/opencode-dcp",
+    "opencode-pty",
+    "./plugins/forge/plugins/opencode.ts",
+  ]);
 
   return config;
 });
 
 configure("tui", (config) => {
-  config.plugin = (config.plugin || [])
-    .reduce((plugins: Plugin[], plugin: Plugin) => {
-      const name: string | null =
-        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
-
-      if (name) {
-        // Remove all plugins except for forge-tui
-        if (name === "./plugins/forge-tui.tsx") {
-          plugins.push(plugin);
-        }
-      }
-
-      return plugins;
-    }, [])
-    .concat([
-      "@tarquinen/opencode-dcp",
-      ["opencode-session-metrics@0.2.3", { context: { show: true } }],
-    ]);
+  config.plugin = definePlugins(config, [
+    "@tarquinen/opencode-dcp",
+    ["opencode-session-metrics@0.2.3", { context: { show: true } }],
+  ]);
 
   return config;
 });

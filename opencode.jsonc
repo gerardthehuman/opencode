@@ -21,14 +21,6 @@
       "url": "https://mcp.exa.ai/mcp?tools=web_search_exa&exaApiKey={env:EXA_API_KEY}",
       "enabled": true,
       "oauth": false
-    },
-    "forge": {
-      "type": "remote",
-      "url": "{env:FORGE_MCP_URL}",
-      "enabled": true,
-      "headers": {
-        "Authorization": "Bearer {env:FORGE_MCP_TOKEN}"
-      }
     }
   },
   "plugin": [
@@ -41,10 +33,11 @@
     ],
     "@franlol/opencode-md-table-formatter",
     "@tarquinen/opencode-dcp",
-    "opencode-pty"
+    "opencode-pty",
+    "./plugins/forge/plugins/opencode.ts"
   ],
   "default_agent": "lead",
-  "small_model": "openrouter/x-ai/grok-build-0.1",
+  "small_model": "forge/x-ai/grok-build-0.1",
   "permission": {
     "external_directory": {
       "/tmp/**": "allow",
@@ -56,187 +49,38 @@
   },
   "agent": {
     "lead": {
-      "model": "openrouter/x-ai/grok-4.5",
-      "variant": "high"
-    },
-    "plan": {
-      "model": "openrouter/openai/gpt-5.6-terra",
+      "model": "forge/openai/gpt-5.6-terra",
       "variant": "xhigh"
     },
+    "plan": {
+      "model": "forge/openai/gpt-5.6-terra",
+      "variant": "xhigh",
+      "disable": true
+    },
     "code": {
-      "model": "openrouter/x-ai/grok-4.5",
-      "variant": "high"
+      "model": "forge/openai/gpt-5.6-luna",
+      "variant": "max"
     },
     "explore": {
-      "model": "openrouter/openai/gpt-5.6-luna",
+      "model": "forge/openai/gpt-5.6-luna",
       "variant": "medium"
     },
     "research": {
-      "model": "openrouter/openai/gpt-5.6-terra",
+      "model": "forge/openai/gpt-5.6-terra",
       "variant": "high"
     },
     "review": {
-      "model": "openrouter/x-ai/grok-4.5",
+      "model": "forge/x-ai/grok-4.5",
       "variant": "high"
     },
-    "lens": {
-      "model": "openrouter/google/gemini-3.1-flash-lite",
-      "variant": "low"
-    },
     "chat": {
-      "description": "A fast, general-purpose agent.",
-      "mode": "primary",
-      "model": "openrouter/openai/gpt-5.6-luna",
+      "model": "forge/openai/gpt-5.6-luna",
       "variant": "medium"
     }
   },
   "skills": {
     "paths": ["~/.codex/skills"]
   },
-  "model": "openrouter/x-ai/grok-4.5",
-  "enabled_providers": ["openrouter"],
-  "provider": {
-    "openrouter": {
-      "name": "Forge (OpenRouter)",
-      "options": {
-        "baseURL": "{env:FORGE_OPENROUTER_BROKER_BASE_URL}",
-        "apiKey": "{env:FORGE_SUPABASE_ACCESS_TOKEN}",
-        "headers": {
-          "HTTP-Referer": "https://forge.humanforce.com",
-          "X-Title": "Forge OpenCode"
-        }
-      },
-      "models": {
-        "deepseek/deepseek-v4-pro": {
-          "name": "Deepseek v4 Pro (Forge)",
-          "limit": {
-            "context": 200000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 3,
-            "output": 15,
-            "cache_read": 0.3
-          }
-        },
-        "z-ai/glm-5.2": {
-          "name": "GLM 5.2 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 1.2,
-            "output": 4.2,
-            "cache_read": 0
-          }
-        },
-        "x-ai/grok-build-0.1": {
-          "name": "Grok Build (Forge)",
-          "limit": {
-            "context": 256000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 1,
-            "output": 2,
-            "cache_read": 0
-          }
-        },
-        "moonshotai/kimi-k2.7-code": {
-          "name": "Kimi K2.7 Code (Forge)",
-          "limit": {
-            "context": 262000,
-            "output": 16384
-          }
-        },
-        "x-ai/grok-4.5": {
-          "name": "Grok 4.5 (Forge)",
-          "limit": {
-            "context": 500000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 2,
-            "output": 6,
-            "cache_read": 0.5
-          }
-        },
-        "anthropic/claude-sonnet-4.6": {
-          "name": "Claude Sonnet 4.6 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
-        },
-        "deepseek/deepseek-v4-flash": {
-          "name": "Deepseek V4 Flash (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
-        },
-        "minimax/minimax-m3": {
-          "name": "MiniMax M3 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
-        },
-        "google/gemini-3.1-flash-lite": {
-          "name": "Gemini Flash Lite (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
-        },
-        "moonshotai/kimi-k3": {
-          "name": "Kimi K3 (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          }
-        },
-        "openai/gpt-5.6-luna": {
-          "name": "GPT 5.6 Luna (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 0.1,
-            "output": 0.6,
-            "cache_read": 0.6
-          }
-        },
-        "openai/gpt-5.6-terra": {
-          "name": "GPT 5.6 Terra (Forge)",
-          "limit": {
-            "context": 1000000,
-            "output": 16384
-          },
-          "cost": {
-            "input": 1,
-            "output": 6,
-            "cache_read": 1
-          }
-        }
-      },
-      "whitelist": [
-        "deepseek/deepseek-v4-pro",
-        "z-ai/glm-5.2",
-        "x-ai/grok-build-0.1",
-        "moonshotai/kimi-k2.7-code",
-        "x-ai/grok-4.5",
-        "anthropic/claude-sonnet-4.6",
-        "deepseek/deepseek-v4-flash",
-        "minimax/minimax-m3",
-        "google/gemini-3.1-flash-lite",
-        "moonshotai/kimi-k3",
-        "openai/gpt-5.6-luna",
-        "openai/gpt-5.6-terra"
-      ]
-    }
-  },
+  "model": "forge/x-ai/grok-4.5",
   "instructions": ["~/.agents/AGENTS.md"]
 }
