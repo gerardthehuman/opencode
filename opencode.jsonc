@@ -28,7 +28,9 @@
       "@plannotator/opencode@0.25.1",
       {
         "workflow": "all-agents",
-        "planningAgents": ["plan"]
+        "planningAgents": [
+          "plan"
+        ]
       }
     ],
     "@franlol/opencode-md-table-formatter",
@@ -79,8 +81,12 @@
     }
   },
   "skills": {
-    "paths": ["~/.codex/skills"]
+    "paths": [
+      "~/.codex/skills"
+    ]
   },
   "model": "forge/x-ai/grok-4.5",
-  "instructions": ["~/.agents/AGENTS.md"]
+  "instructions": [
+    "~/.agents/AGENTS.md"
+  ]
 }
