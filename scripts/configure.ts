@@ -86,7 +86,7 @@ const definePlugins = (config: Config, plugins: Plugin[]) => {
   };
 
   const additions = plugins.map(getPluginName);
-  const keep = additions.filter((p) => !additions.includes(getPluginName(p)));
+  const keep: Plugin[] = (config.plugin ?? []).filter((p) => !additions.includes(getPluginName(p)));
 
   return keep.concat(plugins);
 };
@@ -107,7 +107,7 @@ const agents = {
   },
   code: {
     model: "forge/openai/gpt-5.6-luna",
-    variant: "max",
+    variant: "xhigh",
   },
   explore: {
     model: "forge/openai/gpt-5.6-luna",
@@ -126,7 +126,7 @@ const agents = {
 configure("opencode", (config) => {
   config.agent = config.agent || {};
   config.model = "forge/x-ai/grok-4.5";
-  config.small_model = "forge/x-ai/grok-build-0.1";
+  config.small_model = "forge/openai/gpt-5.6-luna";
   config.default_agent = "lead";
 
   config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
@@ -135,6 +135,7 @@ configure("opencode", (config) => {
   config.permission.question = "allow";
   config.permission.external_directory = {
     ...(config.permission.external_directory || {}),
+    "/**": "allow",
     "*": "allow",
   };
 

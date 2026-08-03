@@ -28,9 +28,7 @@
       "@plannotator/opencode@0.25.1",
       {
         "workflow": "all-agents",
-        "planningAgents": [
-          "plan"
-        ]
+        "planningAgents": ["plan"]
       }
     ],
     "@franlol/opencode-md-table-formatter",
@@ -39,13 +37,14 @@
     "./plugins/forge/plugins/opencode.ts"
   ],
   "default_agent": "lead",
-  "small_model": "forge/x-ai/grok-build-0.1",
+  "small_model": "forge/openai/gpt-5.6-luna",
   "permission": {
     "external_directory": {
       "/tmp/**": "allow",
       "/var/**": "allow",
       "~/.agents/**": "allow",
-      "*": "allow"
+      "*": "allow",
+      "/**": "allow"
     },
     "question": "allow"
   },
@@ -61,7 +60,7 @@
     },
     "code": {
       "model": "forge/openai/gpt-5.6-luna",
-      "variant": "max"
+      "variant": "xhigh"
     },
     "explore": {
       "model": "forge/openai/gpt-5.6-luna",
@@ -81,12 +80,8 @@
     }
   },
   "skills": {
-    "paths": [
-      "~/.codex/skills"
-    ]
+    "paths": ["~/.codex/skills"]
   },
   "model": "forge/x-ai/grok-4.5",
-  "instructions": [
-    "~/.agents/AGENTS.md"
-  ]
+  "instructions": ["~/.agents/AGENTS.md"]
 }
