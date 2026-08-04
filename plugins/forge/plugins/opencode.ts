@@ -1,9 +1,10 @@
 import type { Plugin, PluginModule } from "@opencode-ai/plugin";
 import { ForgePlugin } from "../lib/plugin";
+import { ForgeOptions } from "../lib/options";
 
-export const server: Plugin = async (input) => {
+export const server: Plugin = async (input, options) => {
   try {
-    return await ForgePlugin();
+    return await ForgePlugin(ForgeOptions.parse(options || {}));
   } catch (error) {
     await input.client.app
       .log({

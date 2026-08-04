@@ -4,7 +4,7 @@
   "plugin": [
     "@tarquinen/opencode-dcp",
     [
-      "opencode-session-metrics@0.2.3",
+      "opencode-session-metrics@0.3.0",
       {
         "context": {
           "show": true

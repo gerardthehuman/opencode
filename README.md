@@ -8,27 +8,82 @@ with custom integration with [**Humanforce Forge**](https://docs.forgeworkspace.
 >
 > See [Why Not Forge CLI](#why-not-forge-cli) for more information.
 
+## Usage
+
+Clone the repository to your OpenCode configuration directory
+and install the dependencies.
+
+```sh
+git clone https://github.com/gerardthehuman/opencode.git ~/.config/opencode
+cd ~/.config/opencode
+
+BUN_BE_BUN=1 opencode install
+bun install # if you have Bun
+```
+
+The `configure` script applies **my personal configuration** to your OpenCode setup. It tries to merge with your existing configuration, but it is recommended to back up your configuration first.
+
+```sh
+BUN_BE_BUN=1 opencode run configure
+bun run configure # if you have Bun
+```
+
 ## Features
 
 ### Agents
 
 **Chat** and **Lead** are the primary agents. **Chat** handles normal
-interaction; **Lead** is the default orchestrator (`default_agent`) for bounded
+interaction; **Lead** is the default orchestrator for bounded
 work through **Explore**, **Research**, **Code**, and **Review**.
 
 The **Plan** and **Lens** agents are removed and disabled.
 A capable **Lead** agent can execute their tasks instead.
 
-| Route       | Model                        | Variant |
-| ----------- | ---------------------------- | ------- |
-| Default     | `forge/x-ai/grok-4.5`        | —       |
-| Small model | `forge/openai/gpt-5.6-luna`  | —       |
-| Chat        | `forge/openai/gpt-5.6-luna`  | medium  |
-| Lead        | `forge/openai/gpt-5.6-terra` | xhigh   |
-| Code        | `forge/openai/gpt-5.6-luna`  | xhigh   |
-| Explore     | `forge/openai/gpt-5.6-luna`  | medium  |
-| Research    | `forge/openai/gpt-5.6-terra` | high    |
-| Review      | `forge/x-ai/grok-4.5`        | high    |
+### Forge Integration
+
+This setup includes custom plugin that does most of the CLI wrapper functions
+within OpenCode runtime:
+
+- Detects the Forge desktop app status and sign in state
+- Installs the Forge MCP for access to Forge connections (Jira, Slack, etc.)
+  independently when MCP discovery succeeds.
+
+When Forge is available, the plugin installs a custom OpenRouter provider
+to give access to Forge's model selection. The plugin can also be configured
+to assign models to different agents and roles.
+
+The setup below activates when the Forge models are available.
+
+| Agent    | Model                        | Variant |
+| -------- | ---------------------------- | ------- |
+| Chat     | `forge/openai/gpt-5.6-luna`  | medium  |
+| Lead     | `forge/openai/gpt-5.6-terra` | xhigh   |
+| Code     | `forge/openai/gpt-5.6-luna`  | xhigh   |
+| Explore  | `forge/openai/gpt-5.6-luna`  | medium  |
+| Research | `forge/openai/gpt-5.6-terra` | high    |
+| Review   | `forge/x-ai/grok-4.5`        | high    |
+
+Change your model preferences, by editing the plugin configuration.
+
+```jsonc
+[
+  "./plugins/forge/plugins/opencode.ts",
+  {
+    // Default model for all agents
+    "model": "forge/x-ai/grok-4.5",
+    "agent": {
+      // Set model for the Lead agent
+      "lead": {
+        "model": "forge/openai/gpt-5.6-terra",
+        "variant": "xhigh",
+      },
+    },
+  },
+]
+```
+
+**Your configuration always wins.** If you set a model preference in your
+OpenCode configuration, it will take precedence over the Forge plugin preferences.
 
 ### Plugins
 
@@ -38,7 +93,6 @@ This setup includes the following quality-of-life plugins.
 - **@tarquinen/opencode-dcp** - dynamically prune context for token savings.
 - **@franlol/opencode-md-table-formatter** - makes markdown tables made by the agent look pretty.
 - **opencode-session-metrics** - improved token usage tracker, with better performance.
-- **forge** - provides models and tools from the Forge desktop app.
 
 ### Commands
 
@@ -77,39 +131,3 @@ is now limited unless launched with the Forge CLI.
 This works when using the terminal alone - but not as well when you want
 to use the wider OpenCode ecosystem such as the desktop app, web app,
 and other integrations.
-
-### The Forge Plugin
-
-This setup includes custom plugin that does most of the CLI wrapper functions
-within OpenCode runtime:
-
-- Detects the Forge desktop app status and sign in state
-- Installs the Forge MCP for access to Forge connections (Jira, Slack, etc.)
-- Installs a provider for access to Forge's selected models.
-
-If the desktop app is not running, Forge features will not be activated.
-But you can still use OpenCode!
-
-## Setup
-
-Use Bun `1.13.4`. Clone the repository and install the root dependencies and
-the `plugins/*` workspace:
-
-```sh
-git clone https://github.com/gerardthehuman/opencode.git ~/.config/opencode
-cd ~/.config/opencode
-
-BUN_BE_BUN=1 opencode install
-bun install # if you have Bun
-```
-
-The `configure` script applies the approved model routes and active plugin
-lists to `opencode.jsonc` and `tui.json`, while preserving unrelated settings
-and reporting the resulting diff. It applies OpenCode/TUI settings locally; it
-does not invoke Forge or have Forge regenerate configuration. Run it whenever
-these local overrides need to be reapplied:
-
-```sh
-BUN_BE_BUN=1 opencode run configure
-bun run configure # if you have Bun
-```
