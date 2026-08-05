@@ -177,7 +177,7 @@ configure("opencode", (config) => {
 configure("tui", (config) => {
   config.plugin = definePlugins(config, [
     "@tarquinen/opencode-dcp",
-    ["opencode-session-metrics@0.3.0", { context: { show: true } }],
+    ["opencode-session-metrics@0.3.1", { context: { show: true } }],
   ]);
 
   return config;

@@ -9,7 +9,9 @@
     }
   },
   "default_agent": "lead",
-  "instructions": ["~/.agents/AGENTS.md"],
+  "instructions": [
+    "~/.agents/AGENTS.md"
+  ],
   "mcp": {
     "context7": {
       "enabled": true,
@@ -48,7 +50,9 @@
     [
       "@plannotator/opencode@0.25.1",
       {
-        "planningAgents": ["plan"],
+        "planningAgents": [
+          "plan"
+        ],
         "workflow": "all-agents"
       }
     ],
@@ -93,6 +97,8 @@
   ],
   "provider": {},
   "skills": {
-    "paths": ["~/.codex/skills"]
+    "paths": [
+      "~/.codex/skills"
+    ]
   }
 }
