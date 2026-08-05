@@ -122,7 +122,7 @@ configure("opencode", (config) => {
   config.plugin = definePlugins(config, [
     "@franlol/opencode-md-table-formatter",
     "@khalilgharbaoui/opencode-claude-code-plugin",
-    "@tarquinen/opencode-dcp",
+    "@tarquinen/opencode-dcp@3.1.13",
     "opencode-pty",
     [
       "@plannotator/opencode@0.25.1",
@@ -176,7 +176,7 @@ configure("opencode", (config) => {
 
 configure("tui", (config) => {
   config.plugin = definePlugins(config, [
-    "@tarquinen/opencode-dcp",
+    "@tarquinen/opencode-dcp@3.1.13",
     ["opencode-session-metrics@0.3.1", { context: { show: true } }],
   ]);
 
