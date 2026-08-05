@@ -57,8 +57,8 @@ The setup below activates when the Forge models are available.
 | Agent    | Model                        | Variant |
 | -------- | ---------------------------- | ------- |
 | Chat     | `forge/openai/gpt-5.6-luna`  | medium  |
-| Lead     | `forge/openai/gpt-5.6-terra` | xhigh   |
-| Code     | `forge/openai/gpt-5.6-luna`  | xhigh   |
+| Lead     | `forge/openai/gpt-5.6-sol`   | xhigh   |
+| Code     | `forge/openai/gpt-5.6-terra` | xhigh   |
 | Explore  | `forge/openai/gpt-5.6-luna`  | medium  |
 | Research | `forge/openai/gpt-5.6-terra` | high    |
 | Review   | `forge/x-ai/grok-4.5`        | high    |
@@ -70,11 +70,11 @@ Change your model preferences, by editing the plugin configuration.
   "./plugins/forge/plugins/opencode.ts",
   {
     // Default model for all agents
-    "model": "forge/x-ai/grok-4.5",
+    "model": "forge/openai/gpt-5.6-terra",
     "agent": {
       // Set model for the Lead agent
       "lead": {
-        "model": "forge/openai/gpt-5.6-terra",
+        "model": "forge/openai/gpt-5.6-sol",
         "variant": "xhigh",
       },
     },
