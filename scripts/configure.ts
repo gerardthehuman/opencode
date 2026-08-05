@@ -134,7 +134,7 @@ configure("opencode", (config) => {
     [
       "./plugins/forge/plugins/opencode.ts",
       {
-        model: "forge/x-ai/grok-4.5",
+        model: "forge/openai/gpt-5.6-terra",
         small_model: "forge/openai/gpt-5.6-luna",
         agent: {
           chat: {
@@ -142,7 +142,7 @@ configure("opencode", (config) => {
             variant: "medium",
           },
           lead: {
-            model: "forge/openai/gpt-5.6-terra",
+            model: "forge/openai/gpt-5.6-sol",
             variant: "xhigh",
           },
           plan: {
@@ -151,7 +151,7 @@ configure("opencode", (config) => {
             disable: true,
           },
           code: {
-            model: "forge/openai/gpt-5.6-luna",
+            model: "forge/openai/gpt-5.6-terra",
             variant: "xhigh",
           },
           explore: {
