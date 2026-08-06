@@ -88,7 +88,7 @@ const configure = async (name: string, mutate: (config: Config) => Config) => {
   report(name, input, output);
 };
 
-const definePlugins = (config: Config, plugins: Plugin[]) => {
+const definePlugins = (config: Config, plugins: Plugin[], block: string[] = []) => {
   const getPluginName = (plugin: Plugin) => {
     const id = Array.isArray(plugin) ? plugin[0] : plugin;
     const isLocal = [".", "/", "file://"].some((prefix) => id.startsWith(prefix));
@@ -104,7 +104,11 @@ const definePlugins = (config: Config, plugins: Plugin[]) => {
   };
 
   const additions = plugins.map(getPluginName);
-  const keep: Plugin[] = (config.plugin ?? []).filter((p) => !additions.includes(getPluginName(p)));
+  const keep: Plugin[] = (config.plugin ?? []).filter((p) => {
+    const name = getPluginName(p);
+
+    return !additions.includes(name) && !block.includes(name);
+  });
 
   return keep.concat(plugins);
 };
@@ -122,71 +126,76 @@ configure("opencode", (config) => {
     "*": "allow",
   };
 
-  config.plugin = definePlugins(config, [
-    "@franlol/opencode-md-table-formatter",
-    "@khalilgharbaoui/opencode-claude-code-plugin",
-    "@gblab/opencode-dcp",
-    "opencode-pty",
+  config.plugin = definePlugins(
+    config,
     [
-      "@plannotator/opencode@0.26.2",
-      {
-        workflow: "all-agents",
-        planningAgents: ["plan"],
-      },
-    ],
-    [
-      "./plugins/forge/plugins/opencode.ts",
-      {
-        model: "forge/openai/gpt-5.6-terra",
-        small_model: "forge/openai/gpt-5.6-luna",
-        agent: {
-          chat: {
-            model: "forge/openai/gpt-5.6-luna",
-            variant: "medium",
-          },
-          lead: {
-            model: "forge/openai/gpt-5.6-sol",
-            variant: "xhigh",
-            prompt: null,
-          },
-          plan: {
-            model: "forge/openai/gpt-5.6-terra",
-            variant: "xhigh",
-            disable: true,
-          },
-          code: {
-            model: "forge/openai/gpt-5.6-terra",
-            variant: "xhigh",
-            prompt: null,
-          },
-          explore: {
-            model: "forge/openai/gpt-5.6-luna",
-            variant: "medium",
-            prompt: null,
-          },
-          research: {
-            model: "forge/openai/gpt-5.6-terra",
-            variant: "high",
-            prompt: null,
-          },
-          review: {
-            model: "forge/x-ai/grok-4.5",
-            variant: "high",
-            prompt: null,
+      "@franlol/opencode-md-table-formatter",
+      "@khalilgharbaoui/opencode-claude-code-plugin",
+      "@gblab/opencode-dcp",
+      "opencode-pty",
+      [
+        "@plannotator/opencode@0.26.2",
+        {
+          workflow: "all-agents",
+          planningAgents: ["plan"],
+        },
+      ],
+      [
+        "./plugins/forge/plugins/opencode.ts",
+        {
+          model: "forge/openai/gpt-5.6-terra",
+          small_model: "forge/openai/gpt-5.6-luna",
+          agent: {
+            chat: {
+              model: "forge/openai/gpt-5.6-luna",
+              variant: "medium",
+            },
+            lead: {
+              model: "forge/openai/gpt-5.6-sol",
+              variant: "xhigh",
+              prompt: null,
+            },
+            plan: {
+              model: "forge/openai/gpt-5.6-terra",
+              variant: "xhigh",
+              disable: true,
+            },
+            code: {
+              model: "forge/openai/gpt-5.6-terra",
+              variant: "xhigh",
+              prompt: null,
+            },
+            explore: {
+              model: "forge/openai/gpt-5.6-luna",
+              variant: "medium",
+              prompt: null,
+            },
+            research: {
+              model: "forge/openai/gpt-5.6-terra",
+              variant: "high",
+              prompt: null,
+            },
+            review: {
+              model: "forge/x-ai/grok-4.5",
+              variant: "high",
+              prompt: null,
+            },
           },
         },
-      },
+      ],
     ],
-  ]);
+    ["@tarquinen/opencode-dcp"],
+  );
 
   return config;
 });
 
 configure("tui", (config) => {
-  config.plugin = definePlugins(config, [
-    "@gblab/opencode-dcp",
-    ["opencode-session-metrics@0.3.1", { context: { show: true } }],
-  ]);
+  config.plugin = definePlugins(
+    config,
+    ["@gblab/opencode-dcp", ["opencode-session-metrics@0.3.1", { context: { show: true } }]],
+    ["@tarquinen/opencode-dcp"],
+  );
 
   return config;
 });
