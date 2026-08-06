@@ -9,9 +9,7 @@
     }
   },
   "default_agent": "lead",
-  "instructions": [
-    "~/.agents/AGENTS.md"
-  ],
+  "instructions": ["~/.agents/AGENTS.md"],
   "mcp": {
     "context7": {
       "enabled": true,
@@ -43,16 +41,15 @@
     "question": "allow"
   },
   "plugin": [
+    "@tarquinen/opencode-dcp@3.1.13",
     "@franlol/opencode-md-table-formatter",
     "@khalilgharbaoui/opencode-claude-code-plugin",
-    "@tarquinen/opencode-dcp@3.1.13",
+    "@gblab/opencode-dcp",
     "opencode-pty",
     [
-      "@plannotator/opencode@0.25.1",
+      "@plannotator/opencode@0.26.2",
       {
-        "planningAgents": [
-          "plan"
-        ],
+        "planningAgents": ["plan"],
         "workflow": "all-agents"
       }
     ],
@@ -97,8 +94,6 @@
   ],
   "provider": {},
   "skills": {
-    "paths": [
-      "~/.codex/skills"
-    ]
+    "paths": ["~/.codex/skills"]
   }
 }

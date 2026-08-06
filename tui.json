@@ -3,6 +3,7 @@
   "theme": "forge",
   "plugin": [
     "@tarquinen/opencode-dcp@3.1.13",
+    "@gblab/opencode-dcp",
     [
       "opencode-session-metrics@0.3.1",
       {

@@ -90,7 +90,7 @@ OpenCode configuration, it will take precedence over the Forge plugin preference
 This setup includes the following quality-of-life plugins.
 
 - **@plannotator/opencode** - a visual annonation tool for plans and code reviews.
-- **@tarquinen/opencode-dcp** - dynamically prune context for token savings.
+- **@gblab/opencode-dcp** - dynamically prune context for token savings.
 - **@franlol/opencode-md-table-formatter** - makes markdown tables made by the agent look pretty.
 - **opencode-session-metrics** - improved token usage tracker, with better performance.
 
