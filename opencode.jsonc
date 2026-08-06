@@ -9,7 +9,9 @@
     }
   },
   "default_agent": "lead",
-  "instructions": ["~/.agents/AGENTS.md"],
+  "instructions": [
+    "~/.agents/AGENTS.md"
+  ],
   "mcp": {
     "context7": {
       "enabled": true,
@@ -49,7 +51,9 @@
     [
       "@plannotator/opencode@0.26.2",
       {
-        "planningAgents": ["plan"],
+        "planningAgents": [
+          "plan"
+        ],
         "workflow": "all-agents"
       }
     ],
@@ -63,14 +67,17 @@
           },
           "code": {
             "model": "forge/openai/gpt-5.6-terra",
+            "prompt": null,
             "variant": "xhigh"
           },
           "explore": {
             "model": "forge/openai/gpt-5.6-luna",
+            "prompt": null,
             "variant": "medium"
           },
           "lead": {
             "model": "forge/openai/gpt-5.6-sol",
+            "prompt": null,
             "variant": "xhigh"
           },
           "plan": {
@@ -80,10 +87,12 @@
           },
           "research": {
             "model": "forge/openai/gpt-5.6-terra",
+            "prompt": null,
             "variant": "high"
           },
           "review": {
             "model": "forge/x-ai/grok-4.5",
+            "prompt": null,
             "variant": "high"
           }
         },
@@ -94,6 +103,8 @@
   ],
   "provider": {},
   "skills": {
-    "paths": ["~/.codex/skills"]
+    "paths": [
+      "~/.codex/skills"
+    ]
   }
 }

@@ -10,6 +10,7 @@ export const ForgeOptions = z.object({
         model: z.string(),
         variant: z.string().optional(),
         mode: z.enum(["primary", "subagent", "all"]).optional(),
+        prompt: z.string().nullable().optional(),
         disable: z.boolean().optional().optional(),
       }),
     )

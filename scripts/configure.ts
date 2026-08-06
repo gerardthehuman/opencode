@@ -1,9 +1,12 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath, URL } from "node:url";
 import type { Config as OpenCodeConfig } from "@opencode-ai/plugin";
-import type { JSONSchema as JsonSchema } from "./sort.js";
+
 import { parseJSONC, parseJSON, stringifyJSON, stringifyJSONC } from "confbox";
 import diff from "microdiff";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath, URL } from "node:url";
+
+import type { JSONSchema as JsonSchema } from "./sort.js";
+
 import { sortJsonBySchema } from "./sort.js";
 
 type Plugin = NonNullable<Config["plugin"]>[number];
@@ -144,6 +147,7 @@ configure("opencode", (config) => {
           lead: {
             model: "forge/openai/gpt-5.6-sol",
             variant: "xhigh",
+            prompt: null,
           },
           plan: {
             model: "forge/openai/gpt-5.6-terra",
@@ -153,18 +157,22 @@ configure("opencode", (config) => {
           code: {
             model: "forge/openai/gpt-5.6-terra",
             variant: "xhigh",
+            prompt: null,
           },
           explore: {
             model: "forge/openai/gpt-5.6-luna",
             variant: "medium",
+            prompt: null,
           },
           research: {
             model: "forge/openai/gpt-5.6-terra",
             variant: "high",
+            prompt: null,
           },
           review: {
             model: "forge/x-ai/grok-4.5",
             variant: "high",
+            prompt: null,
           },
         },
       },

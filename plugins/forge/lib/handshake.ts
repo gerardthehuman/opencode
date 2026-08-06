@@ -1,9 +1,10 @@
 import fs, { access, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { homedir } from "node:os";
+import { join } from "node:path";
 import { z } from "zod";
-import { Forge } from "./forge";
+
 import { ForgeNotRunning } from "./errors";
+import { Forge } from "./forge";
 
 export const HandshakeFile = join(homedir(), ".forge", "cli-handshake.json");
 export const HandshakeSchema = z.object({
@@ -47,7 +48,11 @@ export async function handshake() {
 
   // Validate API is reachable
   try {
-    const api = new Forge(`http://${handshake.host}:${handshake.port}`, handshake.token);
+    const api = new Forge(
+      handshake.appPath,
+      `http://${handshake.host}:${handshake.port}`,
+      handshake.token,
+    );
     const status = await api.ping(); //?
 
     if (!status.ok || !status.signedIn) {

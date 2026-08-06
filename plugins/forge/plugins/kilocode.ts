@@ -1,6 +1,7 @@
 import type { Plugin, PluginModule } from "@kilocode/plugin";
-import { ForgePlugin } from "../lib/plugin";
+
 import { ForgeOptions } from "../lib/options";
+import { ForgePlugin } from "../lib/plugin";
 
 export const server: Plugin = async (input, options) => {
   try {
@@ -15,7 +16,7 @@ export const server: Plugin = async (input, options) => {
         },
       })
       .catch(() => {
-        /* logging must not affect provider resolution */
+        // Ignore logging errors
       });
   }
 
