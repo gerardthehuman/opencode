@@ -2,13 +2,9 @@
   "$schema": "https://opencode.ai/tui.json",
   "theme": "forge",
   "plugin": [
+    "@gblab/opencode-dcp",
     [
-      "./plugins/forge-tui.tsx",
-      {}
-    ],
-    "@tarquinen/opencode-dcp",
-    [
-      "opencode-session-metrics@0.2.3",
+      "opencode-session-metrics@0.3.1",
       {
         "context": {
           "show": true

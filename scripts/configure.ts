@@ -1,21 +1,23 @@
+import type { Config as OpenCodeConfig } from "@opencode-ai/plugin";
+
+import { parseJSONC, parseJSON, stringifyJSON, stringifyJSONC } from "confbox";
+import diff from "microdiff";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { parseJSONC, parseJSON, stringifyJSON, stringifyJSONC } from "confbox";
-import diif from "microdiff";
 
-type Plugin = string | [string, Record<string, unknown>];
-type Config = Record<string, unknown> & {
-  agent?: Record<string, Record<string, unknown>>;
-  instructions?: string[];
-  permission?: Record<string, unknown> & {
-    external_directory?: Record<string, string>;
-  };
-  plugin?: Plugin[];
+import type { JSONSchema as JsonSchema } from "./sort.js";
+
+import { sortJsonBySchema } from "./sort.js";
+
+type Plugin = NonNullable<Config["plugin"]>[number];
+type Config = Omit<OpenCodeConfig, "permission"> & {
+  default_agent?: string;
+  permission?: Record<string, unknown>;
 };
 
 const __root = fileURLToPath(new URL("../", import.meta.url));
 
-const resolve = (name: string) => {
+export const resolve = (name: string) => {
   const extensions = {
     jsonc: [parseJSONC, stringifyJSONC],
     json: [parseJSON, stringifyJSON],
@@ -31,8 +33,8 @@ const resolve = (name: string) => {
   return null;
 };
 
-const report = (name: string, from: Config, to: Config) => {
-  const changes = diif(from, to);
+export const report = (name: string, from: Config, to: Config) => {
+  const changes = diff(from, to);
 
   console.log(name);
 
@@ -60,7 +62,7 @@ const report = (name: string, from: Config, to: Config) => {
   }
 };
 
-const configure = (name: string, mutate: (config: Config) => Config) => {
+export const configure = async (name: string, mutate: (config: Config) => Config) => {
   const config = resolve(name);
 
   if (!config) {
@@ -69,112 +71,108 @@ const configure = (name: string, mutate: (config: Config) => Config) => {
   }
 
   const input = config.parse(readFileSync(config.path, "utf8")) as Config;
-  const output = mutate(structuredClone(input) as Config);
+  let output = mutate(structuredClone(input) as Config);
+
+  try {
+    if (typeof input.$schema === "string" && input.$schema.trim()) {
+      const schema = await fetch(input.$schema).then((res) => res.json());
+      output = sortJsonBySchema(output, schema as JsonSchema, { unknownProperties: "alphabetic" });
+    }
+  } catch (error) {
+    console.warn(
+      "Unable to retrieve schema. " + (error instanceof Error ? error.message : String(error)),
+    );
+  }
 
   writeFileSync(config.path, config.stringify(output), "utf8");
   report(name, input, output);
 };
 
-const agents = {
-  chat: {
-    description: "A fast, general-purpose agent.",
-    mode: "primary",
-    model: "openrouter/openai/gpt-5.6-luna",
-    variant: "medium",
-  },
-  lead: {
-    model: "openrouter/x-ai/grok-4.5",
-    variant: "high",
-  },
-  plan: {
-    model: "openrouter/openai/gpt-5.6-terra",
-    variant: "xhigh",
-  },
-  code: {
-    model: "openrouter/x-ai/grok-4.5",
-    variant: "high",
-  },
-  explore: {
-    model: "openrouter/openai/gpt-5.6-luna",
-    variant: "medium",
-  },
-  research: {
-    model: "openrouter/openai/gpt-5.6-terra",
-    variant: "high",
-  },
-  review: {
-    model: "openrouter/x-ai/grok-4.5",
-    variant: "high",
-  },
-  lens: {
-    model: "openrouter/google/gemini-3.1-flash-lite",
-    variant: "low",
-  },
+export const definePlugins = (config: Config, plugins: Plugin[], block: string[] = []) => {
+  const getPluginName = (plugin: Plugin) => {
+    const id = Array.isArray(plugin) ? plugin[0] : plugin;
+    const isLocal = [".", "/", "file://"].some((prefix) => id.startsWith(prefix));
+
+    if (!isLocal) {
+      const pattern = /^((?:@[^/@]+\/)?[^@]+)(?:@(.+))?$/;
+      const [name, _] = pattern.exec(id)?.slice(1) ?? [];
+
+      if (name) return name;
+    }
+
+    return id;
+  };
+
+  const additions = plugins.map(getPluginName);
+  const keep: Plugin[] = (config.plugin ?? []).filter((p) => {
+    const name = getPluginName(p);
+
+    return !additions.includes(name) && !block.includes(name);
+  });
+
+  return keep.concat(plugins);
 };
 
 configure("opencode", (config) => {
-  config.agent = config.agent || {};
-  config.model = "openrouter/x-ai/grok-4.5";
-  config.small_model = "openrouter/x-ai/grok-build-0.1";
   config.default_agent = "lead";
-
   config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
+
+  config.provider = config.provider || {};
 
   config.permission = config.permission || {};
   config.permission.question = "allow";
   config.permission.external_directory = {
     ...(config.permission.external_directory || {}),
+    "/**": "allow",
     "*": "allow",
   };
 
-  for (const [name, override] of Object.entries(agents)) {
-    config.agent[name] = { ...(config.agent[name] ?? {}), ...override };
-  }
-
-  config.plugin = (config.plugin || [])
-    .reduce((plugins: Plugin[], plugin: Plugin) => {
-      const name: string | null =
-        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
-
-      if (name) {
-        // Overwrite the @plannotator/opencode configuration
-        if (name.startsWith("@plannotator/opencode")) {
-          plugins.push([
-            "@plannotator/opencode@0.25.1",
-            {
-              workflow: "all-agents",
-              planningAgents: ["plan"],
+  config.plugin = definePlugins(
+    config,
+    [
+      "@franlol/opencode-md-table-formatter",
+      "@gblab/opencode-dcp",
+      "opencode-pty",
+      [
+        "@plannotator/opencode@0.26.2",
+        {
+          workflow: "all-agents",
+          planningAgents: ["plan"],
+        },
+      ],
+      ["./plugins/claude-code/src/index.ts", { pricing: "enterprise" }],
+      [
+        "./plugins/forge/plugins/opencode.ts",
+        {
+          model: "forge/openai/gpt-5.6-terra",
+          small_model: "forge/x-ai/grok-build-0.1",
+          agent: {
+            chat: {
+              model: "forge/openai/gpt-5.6-luna",
+              variant: "medium",
             },
-          ]);
-        }
-      }
-
-      return plugins;
-    }, [])
-    .concat(["@franlol/opencode-md-table-formatter", "@tarquinen/opencode-dcp", "opencode-pty"]);
+            lens: {
+              disable: true,
+            },
+            plan: {
+              disable: true,
+            },
+          },
+        },
+      ],
+    ],
+    ["@tarquinen/opencode-dcp", "@khalilgharbaoui/opencode-claude-code-plugin"],
+  );
 
   return config;
 });
 
 configure("tui", (config) => {
-  config.plugin = (config.plugin || [])
-    .reduce((plugins: Plugin[], plugin: Plugin) => {
-      const name: string | null =
-        typeof plugin === "string" ? plugin : Array.isArray(plugin) ? plugin[0] : null;
-
-      if (name) {
-        // Remove all plugins except for forge-tui
-        if (name === "./plugins/forge-tui.tsx") {
-          plugins.push(plugin);
-        }
-      }
-
-      return plugins;
-    }, [])
-    .concat([
-      "@tarquinen/opencode-dcp",
-      ["opencode-session-metrics@0.2.3", { context: { show: true } }],
-    ]);
+  config.plugin = definePlugins(
+    config,
+    ["@gblab/opencode-dcp", ["opencode-session-metrics@0.3.1", { context: { show: true } }]],
+    ["@tarquinen/opencode-dcp"],
+  );
 
   return config;
 });
