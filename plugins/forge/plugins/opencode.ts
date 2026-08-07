@@ -7,6 +7,7 @@ export const server: Plugin = async (input, options) => {
   try {
     return await ForgePlugin(ForgeOptions.parse(options || {}));
   } catch (error) {
+    console.error("Forge plugin error:", (error as Error).message);
     await input.client.app
       .log({
         body: {

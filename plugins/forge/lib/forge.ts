@@ -47,7 +47,8 @@ const ForgeCatalog = z.looseObject({
   agents: z.array(
     z.looseObject({
       role: z.string(),
-      model: z.string(),
+      model: z.string().optional(),
+      reasoningEffort: z.string().optional(),
     }),
   ),
 });
@@ -156,16 +157,12 @@ export class Forge {
           const name = basename(file, ".md");
           const contents = await readFile(file, "utf-8");
           const { data, content: prompt } = matter(contents);
-          const catalogModel = (catalog?.agents ?? []).find((agent) => agent.role === name)?.model;
-          const model = catalogModel
-            ? catalogModel.startsWith("forge/")
-              ? catalogModel
-              : `forge/${catalogModel}`
-            : undefined;
+          const options = (catalog?.agents ?? []).find((agent) => agent.role === name);
 
           agents[name] = {
             name,
-            model,
+            model: options?.model ? `forge/${options.model}` : undefined,
+            variant: options?.reasoningEffort,
             ...(data as Omit<Agent, "name" | "prompt">),
             prompt: prompt.trim(),
           };
