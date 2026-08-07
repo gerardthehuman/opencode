@@ -17,7 +17,7 @@ type Config = Omit<OpenCodeConfig, "permission"> & {
 
 const __root = fileURLToPath(new URL("../", import.meta.url));
 
-const resolve = (name: string) => {
+export const resolve = (name: string) => {
   const extensions = {
     jsonc: [parseJSONC, stringifyJSONC],
     json: [parseJSON, stringifyJSON],
@@ -33,7 +33,7 @@ const resolve = (name: string) => {
   return null;
 };
 
-const report = (name: string, from: Config, to: Config) => {
+export const report = (name: string, from: Config, to: Config) => {
   const changes = diff(from, to);
 
   console.log(name);
@@ -62,7 +62,7 @@ const report = (name: string, from: Config, to: Config) => {
   }
 };
 
-const configure = async (name: string, mutate: (config: Config) => Config) => {
+export const configure = async (name: string, mutate: (config: Config) => Config) => {
   const config = resolve(name);
 
   if (!config) {
@@ -88,7 +88,7 @@ const configure = async (name: string, mutate: (config: Config) => Config) => {
   report(name, input, output);
 };
 
-const definePlugins = (config: Config, plugins: Plugin[], block: string[] = []) => {
+export const definePlugins = (config: Config, plugins: Plugin[], block: string[] = []) => {
   const getPluginName = (plugin: Plugin) => {
     const id = Array.isArray(plugin) ? plugin[0] : plugin;
     const isLocal = [".", "/", "file://"].some((prefix) => id.startsWith(prefix));
@@ -145,41 +145,17 @@ configure("opencode", (config) => {
         "./plugins/forge/plugins/opencode.ts",
         {
           model: "forge/openai/gpt-5.6-terra",
-          small_model: "forge/openai/gpt-5.6-luna",
+          small_model: "forge/x-ai/grok-build-0.1",
           agent: {
             chat: {
               model: "forge/openai/gpt-5.6-luna",
               variant: "medium",
             },
-            lead: {
-              model: "forge/openai/gpt-5.6-sol",
-              variant: "xhigh",
-              prompt: null,
-            },
-            plan: {
-              model: "forge/openai/gpt-5.6-terra",
-              variant: "xhigh",
+            lens: {
               disable: true,
             },
-            code: {
-              model: "forge/openai/gpt-5.6-terra",
-              variant: "xhigh",
-              prompt: null,
-            },
-            explore: {
-              model: "forge/openai/gpt-5.6-luna",
-              variant: "medium",
-              prompt: null,
-            },
-            research: {
-              model: "forge/openai/gpt-5.6-terra",
-              variant: "high",
-              prompt: null,
-            },
-            review: {
-              model: "forge/x-ai/grok-4.5",
-              variant: "high",
-              prompt: null,
+            plan: {
+              disable: true,
             },
           },
         },
