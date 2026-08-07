@@ -44,7 +44,6 @@
   },
   "plugin": [
     "@franlol/opencode-md-table-formatter",
-    "@khalilgharbaoui/opencode-claude-code-plugin",
     "@gblab/opencode-dcp",
     "opencode-pty",
     [
@@ -54,6 +53,12 @@
           "plan"
         ],
         "workflow": "all-agents"
+      }
+    ],
+    [
+      "./plugins/claude-code/src/index.ts",
+      {
+        "pricing": "enterprise"
       }
     ],
     [

@@ -118,6 +118,7 @@ configure("opencode", (config) => {
   config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
 
   config.provider = config.provider || {};
+
   config.permission = config.permission || {};
   config.permission.question = "allow";
   config.permission.external_directory = {
@@ -130,7 +131,6 @@ configure("opencode", (config) => {
     config,
     [
       "@franlol/opencode-md-table-formatter",
-      "@khalilgharbaoui/opencode-claude-code-plugin",
       "@gblab/opencode-dcp",
       "opencode-pty",
       [
@@ -140,6 +140,7 @@ configure("opencode", (config) => {
           planningAgents: ["plan"],
         },
       ],
+      ["./plugins/claude-code/src/index.ts", { pricing: "enterprise" }],
       [
         "./plugins/forge/plugins/opencode.ts",
         {
@@ -184,7 +185,7 @@ configure("opencode", (config) => {
         },
       ],
     ],
-    ["@tarquinen/opencode-dcp"],
+    ["@tarquinen/opencode-dcp", "@khalilgharbaoui/opencode-claude-code-plugin"],
   );
 
   return config;

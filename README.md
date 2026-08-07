@@ -19,6 +19,7 @@ cd ~/.config/opencode
 
 BUN_BE_BUN=1 opencode install
 bun install # if you have Bun
+bun install --cwd plugins/claude-code
 ```
 
 The `configure` script applies **my personal configuration** to your OpenCode setup. It tries to merge with your existing configuration, but it is recommended to back up your configuration first.

@@ -1,0 +1,374 @@
+import type { LanguageModelV3 } from "@ai-sdk/provider";
+
+import type { OpenCodeModel, OpenCodePlugin, OpenCodeProvider } from "./opencode-types.js";
+import type {
+  ClaudeCodePluginOptions,
+  ClaudeCodePricing,
+  ClaudeCodeProviderSettings,
+} from "./types.js";
+
+import { ClaudeCodeLanguageModel } from "./claude-code-language-model.js";
+import { configureLogger, log } from "./logger.js";
+import { defaultModels, resolveModelsForPricing, toConfigModel } from "./models.js";
+import {
+  isUsableDirectory,
+  setOpencodeClient,
+  setOpencodeProjectDirectory,
+} from "./runtime-status.js";
+
+export interface ClaudeCodeProvider {
+  specificationVersion: "v3";
+  (modelId: string): LanguageModelV3;
+  languageModel(modelId: string): LanguageModelV3;
+}
+
+// Picks the best directory from opencode's plugin context (`directory` /
+// `worktree`). Result is handed to runtime-status so it's available as a
+// *fallback* at spawn time only when `process.cwd()` is unusable (macOS
+// GUI launches at `/`). Never baked into provider config — see #4.
+function pickOpencodeDirectory(input: unknown): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const ctx = input as { directory?: unknown; worktree?: unknown };
+  if (isUsableDirectory(ctx.directory)) return ctx.directory;
+  if (isUsableDirectory(ctx.worktree)) return ctx.worktree;
+  return undefined;
+}
+
+let warnedAnthropicApiKey = false;
+
+// `Question` is deliberately absent: enabling it disables Claude Code's
+// built-in AskUserQuestion (via --disallowedTools) and replaces the
+// stop-and-wait deny/markdown path with an in-turn blocking form. That is a
+// behavior trade against the issue-#8 guarantee, so it stays opt-in until it
+// has the same live mileage Task had before v0.10.0 flipped it on. Users opt
+// in by listing it in `proxyTools`; see README "Question proxy tool".
+const DEFAULT_PROXY_TOOL_NAMES = ["Bash", "Edit", "Write", "WebFetch", "Task"];
+
+// One-time heads-up: an API key in the environment makes Claude Code bill
+// pay-as-you-go (Console) instead of the logged-in Pro/Max subscription, which
+// silently bypasses the Agent SDK plan credit. Surfaced once per process.
+function warnIfAnthropicApiKey(ignore: boolean | undefined): void {
+  if (warnedAnthropicApiKey) return;
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) return;
+  warnedAnthropicApiKey = true;
+  if (ignore) {
+    log.warn(
+      "ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN detected; stripping it from claude spawns (ignoreAnthropicApiKey) so requests use your subscription auth, not pay-as-you-go API billing.",
+    );
+  } else {
+    log.warn(
+      "ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN detected; claude may bill as pay-as-you-go API usage instead of your subscription / Agent SDK credit. Set provider option `ignoreAnthropicApiKey: true` to force subscription auth.",
+    );
+  }
+}
+
+export function createClaudeCode(settings: ClaudeCodeProviderSettings = {}): ClaudeCodeProvider {
+  if (settings.logging) {
+    configureLogger({
+      file: settings.logging.file ?? false,
+      dir: settings.logging.dir ?? null,
+      mode: settings.logging.mode ?? "silent",
+      level: settings.logging.level ?? "info",
+    });
+  }
+  warnIfAnthropicApiKey(settings.ignoreAnthropicApiKey);
+  const cliPath = settings.cliPath ?? process.env.CLAUDE_CLI_PATH ?? "claude";
+  const providerName = settings.providerID ?? settings.name ?? "claude-code";
+  const proxyTools = settings.proxyTools ?? [...DEFAULT_PROXY_TOOL_NAMES];
+
+  const createModel = (modelId: string): LanguageModelV3 => {
+    return new ClaudeCodeLanguageModel(modelId, {
+      provider: providerName,
+      cliPath,
+      cwd: settings.cwd,
+      providerID: settings.providerID,
+      skipPermissions: settings.skipPermissions ?? true,
+      permissionMode: settings.permissionMode,
+      mcpConfig: settings.mcpConfig,
+      strictMcpConfig: settings.strictMcpConfig,
+      bridgeOpencodeMcp: settings.bridgeOpencodeMcp ?? true,
+      controlRequestBehavior: settings.controlRequestBehavior ?? "allow",
+      controlRequestToolBehaviors: settings.controlRequestToolBehaviors,
+      controlRequestDenyMessage: settings.controlRequestDenyMessage,
+      proxyTools,
+      proxyToolTimeoutMs: settings.proxyToolTimeoutMs,
+      webSearch: settings.webSearch,
+      hotReloadMcp: settings.hotReloadMcp ?? true,
+      proxyOpencodeMcpTools: settings.proxyOpencodeMcpTools ?? true,
+      multiStepContinuation: settings.multiStepContinuation ?? true,
+      autoContinueIncompleteTurns: settings.autoContinueIncompleteTurns ?? "smart",
+      compactionModel: settings.compactionModel,
+      ignoreAnthropicApiKey: settings.ignoreAnthropicApiKey,
+    });
+  };
+
+  const provider = function (modelId: string) {
+    return createModel(modelId);
+  } as ClaudeCodeProvider;
+
+  provider.specificationVersion = "v3";
+  provider.languageModel = createModel;
+
+  return provider;
+}
+
+// ---------------------------------------------------------------------------
+// OpenCode plugin interface
+// ---------------------------------------------------------------------------
+
+const PROVIDER_ID = "claude-code";
+
+function pruneRemovedProviderOptions(
+  options: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const result = { ...options };
+  delete result.account;
+  delete result.accounts;
+  delete result.configDir;
+  delete result.interactive;
+  delete result.interactiveAllowTools;
+  delete result.interactiveBypass;
+  delete result.interactiveSystemPrompt;
+  delete result.pricing;
+  return result;
+}
+
+function defaultModelsForProvider(
+  providerModels: OpenCodeProvider["models"],
+  providerID = PROVIDER_ID,
+  baseModels = defaultModels,
+) {
+  const result: Record<string, OpenCodeModel> = Object.fromEntries(
+    Object.entries(baseModels).map(([id, model]) => {
+      const existing = providerModels[id];
+      const existingVariants =
+        existing && typeof (existing as { variants?: unknown }).variants === "object"
+          ? ((existing as { variants?: Record<string, Record<string, unknown>> }).variants ?? {})
+          : {};
+      return [
+        id,
+        {
+          ...model,
+          id,
+          providerID,
+          api: {
+            ...model.api,
+            id,
+            npm: existing?.api?.npm ?? model.api.npm,
+            url: existing?.api?.url ?? model.api.url,
+          },
+          variants: {
+            ...(model.variants ?? {}),
+            ...existingVariants,
+          },
+        },
+      ];
+    }),
+  );
+
+  for (const [id, model] of Object.entries(providerModels)) {
+    if (!(id in result)) {
+      result[id] = {
+        ...model,
+        providerID,
+      };
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Build models in OpenCode's config schema format (flat properties like
+ * `temperature`, `reasoning`, `cost.cache_read`, `modalities`, etc.)
+ * so the config-path provider loader parses them correctly.
+ */
+export function configModelsForProvider(
+  providerModels: OpenCodeProvider["models"],
+  providerID: string,
+  baseModels = defaultModels,
+): Record<string, Record<string, unknown>> {
+  const result: Record<string, Record<string, unknown>> = {};
+
+  for (const [id, model] of Object.entries(baseModels)) {
+    const existing = providerModels[id];
+    const existingVariants =
+      existing && typeof (existing as { variants?: unknown }).variants === "object"
+        ? ((existing as { variants?: Record<string, Record<string, unknown>> }).variants ?? {})
+        : {};
+    const full: OpenCodeModel = {
+      ...model,
+      id,
+      providerID,
+      api: {
+        ...model.api,
+        id,
+        npm: existing?.api?.npm ?? model.api.npm,
+        url: existing?.api?.url ?? model.api.url,
+      },
+      variants: {
+        ...(model.variants ?? {}),
+        ...existingVariants,
+      },
+    };
+    result[id] = toConfigModel(full);
+  }
+
+  for (const [id, model] of Object.entries(providerModels)) {
+    if (!(id in result)) {
+      result[id] = toConfigModel({ ...model, providerID } as OpenCodeModel);
+    }
+  }
+
+  return result;
+}
+
+function providerConfig(
+  existing:
+    | {
+        name?: string;
+        npm?: string;
+        options?: Record<string, unknown>;
+        models?: Record<string, unknown>;
+      }
+    | undefined,
+  providerID = PROVIDER_ID,
+) {
+  const mergedOptions: Record<string, unknown> = {
+    cliPath: "claude",
+    proxyTools: [...DEFAULT_PROXY_TOOL_NAMES],
+    ...pruneRemovedProviderOptions(existing?.options),
+    providerID,
+  };
+
+  return {
+    name: "Claude Code",
+    npm: existing?.npm ?? import.meta.url,
+    options: mergedOptions,
+    // models is intentionally omitted: both callers overwrite it with
+    // configModelsForProvider(), which emits the flat config schema
+    // opencode's config-path loader parses (and merges user variants).
+  };
+}
+
+function pluginPricing(options: unknown): ClaudeCodePricing {
+  const pricing =
+    options && typeof options === "object"
+      ? (options as ClaudeCodePluginOptions).pricing
+      : undefined;
+  return pricing === "enterprise" || pricing === "bedrock" || pricing === "subscription"
+    ? pricing
+    : "subscription";
+}
+
+const server: OpenCodePlugin = async (input, options) => {
+  // Capture the SDK client so the language model can query opencode's
+  // in-memory MCP state per-turn for the runtime overlay. `input` is
+  // `unknown` here (kept loose since opencode adds fields over time);
+  // narrow defensively.
+  if (input && typeof input === "object" && "client" in input) {
+    setOpencodeClient((input as { client?: unknown }).client);
+  }
+
+  // Capture opencode's project-aware directory as a *fallback* used at
+  // Claude CLI spawn time only when `process.cwd()` is unusable. Rescues
+  // macOS GUI launches at `/` without freezing the value into provider
+  // config, so opencode workspace switches mid-session still take effect.
+  // See `resolveSpawnCwd` in runtime-status.ts and issue #4.
+  setOpencodeProjectDirectory(pickOpencodeDirectory(input));
+
+  const pricing = pluginPricing(options);
+  let resolvedModels: Promise<Record<string, OpenCodeModel>> | undefined;
+  const getResolvedModels = (providerModels: OpenCodeProvider["models"]) => {
+    resolvedModels ??= resolveModelsForPricing(
+      pricing,
+      defaultModelsForProvider(providerModels, PROVIDER_ID),
+    );
+    return resolvedModels;
+  };
+
+  return {
+    config: async (config) => {
+      config.provider ??= {};
+
+      const existing = config.provider[PROVIDER_ID];
+      const models = await getResolvedModels(
+        (existing?.models ?? {}) as OpenCodeProvider["models"],
+      );
+      config.provider[PROVIDER_ID] = {
+        ...existing,
+        ...providerConfig(existing),
+        models: configModelsForProvider({}, PROVIDER_ID, models),
+      };
+    },
+    // No `event` hook: MCP config drift is detected at turn start by the
+    // hot-reload check in `claude-code-language-model.ts`, which respawns
+    // claude safely between turns. Eviction on `global.disposed` would kill
+    // an in-flight stream and abort the user's current turn.
+    provider: {
+      id: PROVIDER_ID,
+      models: async (provider) => getResolvedModels(provider.models),
+    },
+    // Inject opencode's agent name into providerOptions so the language
+    // model can distinguish /compact (and title) calls from normal turns.
+    // Without this, every no-tools call looks like a title request and
+    // gets short-circuited to a synthetic stub.
+    "chat.params": async (input, output) => {
+      const providerID = input.model?.providerID ?? input.provider?.info?.id;
+      // The hook fires for every provider opencode is configured with, not
+      // just ours — keep this at debug to avoid log spam on non-claude-code
+      // calls.
+      log.debug("chat.params hook fired", {
+        agent: input.agent,
+        providerID,
+        sessionID: input.sessionID,
+      });
+      if (typeof providerID !== "string") return;
+      if (providerID !== PROVIDER_ID) return;
+
+      // Inject sessionID BEFORE the agent guard so session isolation works
+      // even when input.agent is absent (older opencode, provider-switch
+      // edge paths). resolveSessionAffinity reads this as a fallback when
+      // the x-session-affinity header is missing.
+      if (typeof input.sessionID === "string" && input.sessionID.length > 0) {
+        output.options ??= {};
+        (output.options as Record<string, unknown>).opencodeSessionID = input.sessionID;
+      }
+
+      if (!input.agent) return;
+      // opencode wraps the entire `output.options` bag under the providerID
+      // via ProviderTransform.providerOptions(model, options) → { [providerID]: options }
+      // before handing it to the language model as `providerOptions`. So we
+      // write fields at the TOP LEVEL of output.options, not nested under
+      // providerID — otherwise the model sees providerOptions[id][id].opencodeAgent.
+      output.options ??= {};
+      (output.options as Record<string, unknown>).opencodeAgent = input.agent;
+      log.debug("chat.params tagged providerOptions", {
+        agent: input.agent,
+        sessionID: input.sessionID,
+        providerID,
+      });
+    },
+  };
+};
+
+export default {
+  id: "@khalilgharbaoui/opencode-claude-code-plugin",
+  server,
+};
+
+// ---------------------------------------------------------------------------
+// Re-exports
+// ---------------------------------------------------------------------------
+
+export { ClaudeCodeLanguageModel } from "./claude-code-language-model.js";
+export { bridgeOpencodeMcp } from "./mcp-bridge.js";
+export { defaultModels } from "./models.js";
+export type {
+  ClaudeCodeConfig,
+  ClaudeCodePluginOptions,
+  ClaudeCodePricing,
+  ClaudeCodeProviderSettings,
+  ClaudeStreamMessage,
+} from "./types.js";
+export type { OpenCodeHooks, OpenCodeModel, OpenCodePlugin } from "./opencode-types.js";
