@@ -6,6 +6,10 @@
     "./opencode": "./plugins/opencode.ts",
     "./kilocode": "./plugins/kilocode.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:live-forge": "bun test tests/live.test.ts"
+  },
   "dependencies": {
     "@opencode-ai/models": "^0.0.31",
     "globlin": "1.0.0-beta.1",
