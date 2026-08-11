@@ -6,9 +6,7 @@
     }
   },
   "default_agent": "lead",
-  "instructions": [
-    "~/.agents/AGENTS.md"
-  ],
+  "instructions": ["~/.agents/AGENTS.md"],
   "mcp": {
     "context7": {
       "enabled": true,
@@ -49,9 +47,7 @@
     [
       "@plannotator/opencode@0.26.2",
       {
-        "planningAgents": [
-          "plan"
-        ],
+        "planningAgents": ["plan"],
         "workflow": "all-agents"
       }
     ],
@@ -81,10 +77,18 @@
       }
     ]
   ],
-  "provider": {},
+  "provider": {
+    "claude-code": {
+      "whitelist": ["claude-opus-5", "claude-sonnet-5"]
+    },
+    "github-copilot": {
+      "whitelist": ["claude-haiku-4.5", "claude-sonnet-4.5", "gpt-5.3-codex"]
+    },
+    "opencode": {
+      "whitelist": ["deepseek-v4-flash-free", "mimo-v2.5-free", "minimax-m3-free"]
+    }
+  },
   "skills": {
-    "paths": [
-      "~/.codex/skills"
-    ]
+    "paths": ["~/.codex/skills"]
   }
 }

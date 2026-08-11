@@ -117,7 +117,18 @@ configure("opencode", (config) => {
   config.default_agent = "lead";
   config.instructions = Array.from(new Set(config.instructions || []).add("~/.agents/AGENTS.md"));
 
-  config.provider = config.provider || {};
+  config.provider = {
+    ...(config.provider || {}),
+    "claude-code": {
+      whitelist: ["claude-opus-5", "claude-sonnet-5"],
+    },
+    "github-copilot": {
+      whitelist: ["claude-haiku-4.5", "claude-sonnet-4.5", "gpt-5.3-codex"],
+    },
+    opencode: {
+      whitelist: ["deepseek-v4-flash-free", "mimo-v2.5-free", "minimax-m3-free"],
+    },
+  };
 
   config.permission = config.permission || {};
   config.permission.question = "allow";
