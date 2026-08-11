@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test:live-forge": "bun test tests/live.test.ts"
+    "test": "bun test tests/handshake.test.ts tests/forge.test.ts"
   },
   "dependencies": {
     "@opencode-ai/models": "^0.0.31",
