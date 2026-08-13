@@ -4,13 +4,14 @@
   "plugin": [
     "@gblab/opencode-dcp",
     [
-      "opencode-session-metrics@0.3.1",
+      "opencode-session-metrics",
       {
         "context": {
           "show": true
         }
       }
-    ]
+    ],
+    "../../.local/share/forge/packages/opencode"
   ],
   "plugin_enabled": {
     "humanforce.forge": true,

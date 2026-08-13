@@ -9,34 +9,34 @@
   "instructions": ["~/.agents/AGENTS.md"],
   "mcp": {
     "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
       "enabled": true,
+      "oauth": false,
       "headers": {
         "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
-      },
-      "oauth": false,
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp"
+      }
     },
     "gh_grep": {
-      "enabled": true,
-      "oauth": false,
       "type": "remote",
-      "url": "https://mcp.grep.app"
+      "url": "https://mcp.grep.app",
+      "enabled": true,
+      "oauth": false
     },
     "websearch": {
-      "enabled": true,
-      "oauth": false,
       "type": "remote",
-      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa&exaApiKey={env:EXA_API_KEY}"
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa&exaApiKey={env:EXA_API_KEY}",
+      "enabled": true,
+      "oauth": false
     }
   },
   "permission": {
     "external_directory": {
-      "*": "allow",
-      "/**": "allow",
       "/tmp/**": "allow",
       "/var/**": "allow",
-      "~/.agents/**": "allow"
+      "~/.agents/**": "allow",
+      "*": "allow",
+      "/**": "allow"
     },
     "question": "allow"
   },
@@ -45,35 +45,17 @@
     "@gblab/opencode-dcp",
     "opencode-pty",
     [
-      "@plannotator/opencode@0.26.2",
-      {
-        "planningAgents": ["plan"],
-        "workflow": "all-agents"
-      }
-    ],
-    [
       "./plugins/claude-code/src/index.ts",
       {
         "pricing": "enterprise"
       }
     ],
+    "../../.local/share/forge/packages/opencode",
     [
-      "./plugins/forge/plugins/opencode.ts",
+      "@plannotator/opencode@0.27.4",
       {
-        "agent": {
-          "chat": {
-            "model": "forge/openai/gpt-5.6-luna",
-            "variant": "medium"
-          },
-          "lens": {
-            "disable": true
-          },
-          "plan": {
-            "disable": true
-          }
-        },
-        "model": "forge/openai/gpt-5.6-terra",
-        "small_model": "forge/x-ai/grok-build-0.1"
+        "workflow": "all-agents",
+        "planningAgents": ["plan"]
       }
     ]
   ],
@@ -90,5 +72,7 @@
   },
   "skills": {
     "paths": ["~/.codex/skills"]
-  }
+  },
+  "small_model": "openrouter/x-ai/grok-build-0.1",
+  "model": "openrouter/deepseek/deepseek-v4-flash-0731"
 }
